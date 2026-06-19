@@ -86,7 +86,8 @@ En `jcuervom/fwc-fixture` ya se aplicaron protecciones sobre `main`:
 - Aprobación del último push requerida.
 - Status checks requeridos: `Quality` y `CodeQL`.
 - Branch actualizado antes de merge.
-- Commits firmados requeridos.
+- Commits firmados recomendados. Activa esta regla cuando Git signing este
+  configurado para todos los maintainers.
 - Historial lineal requerido.
 - Conversaciones resueltas antes de merge.
 - Force pushes bloqueados.
