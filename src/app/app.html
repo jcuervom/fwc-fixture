@@ -22,9 +22,15 @@
       (click)="toggleAuto()"
       type="button"
       [attr.aria-pressed]="autoOn()"
+      [attr.aria-label]="
+        autoOn()
+          ? 'Pausar actualización automática'
+          : 'Activar actualización automática'
+      "
       title="Actualización automática"
     >
-      <span class="sw"></span>{{ autoOn() ? 'Auto' : 'Pausado' }}
+      <span class="sw"></span
+      ><span class="lbl">{{ autoOn() ? 'Auto' : 'Pausado' }}</span>
     </button>
   </div>
 </header>

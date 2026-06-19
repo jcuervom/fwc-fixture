@@ -79,6 +79,7 @@ import { TeamBadge } from './team-badge';
         display: flex;
         flex-direction: column;
         gap: 2px;
+        min-width: 0;
         position: relative;
         overflow: hidden;
       }
@@ -158,6 +159,10 @@ import { TeamBadge } from './team-badge';
         display: flex;
         align-items: center;
         gap: 5px;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .card.big .st {
         font-size: 11px;
@@ -210,6 +215,39 @@ import { TeamBadge } from './team-badge';
       @media (prefers-reduced-motion: reduce) {
         .dot::after {
           animation: none;
+        }
+      }
+      @media (max-width: 560px) {
+        .card {
+          border-radius: 8px;
+          padding: 7px 8px;
+        }
+        .card.big {
+          padding: 10px 12px;
+          gap: 4px;
+        }
+        .row {
+          gap: 6px;
+          --sz: 18px;
+        }
+        .card.big .row {
+          --sz: 24px;
+        }
+        .nm {
+          font-size: 12.5px;
+        }
+        .card.big .nm {
+          font-size: 15px;
+        }
+        .sc {
+          font-size: 13px;
+        }
+        .card.big .sc {
+          font-size: 18px;
+        }
+        .st {
+          font-size: 8.5px;
+          letter-spacing: 0.07em;
         }
       }
     `,

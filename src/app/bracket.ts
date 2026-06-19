@@ -27,6 +27,14 @@ export class Bracket {
   ];
   // lado derecho: de la final hacia fuera
   readonly rightCols: Col[] = [...this.leftCols].reverse();
+  readonly mobileRounds: RoundSlug[] = [
+    'round-of-32',
+    'round-of-16',
+    'quarterfinals',
+    'semifinals',
+    'final',
+    '3rd-place-match',
+  ];
 
   label(slug: RoundSlug): string {
     return ROUND_LABEL[slug];
@@ -56,5 +64,8 @@ export class Bracket {
   }
   thirdMatch(): Match | null {
     return this.svc.byRound('3rd-place-match')[0] ?? null;
+  }
+  roundMatches(slug: RoundSlug): Match[] {
+    return this.svc.byRound(slug);
   }
 }

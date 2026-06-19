@@ -55,3 +55,21 @@
     </div>
   </div>
 </div>
+
+<div class="mobile-bracket" aria-label="Cuadro por rondas">
+  @for (slug of mobileRounds; track slug) {
+  @let matches = roundMatches(slug);
+  <section class="mobile-round" [class.feature]="slug === 'final'">
+    <h3>{{ label(slug) }}</h3>
+    <div class="mobile-grid">
+      @if (matches.length) {
+        @for (m of matches; track m.id) {
+        <app-tie [match]="m" [big]="slug === 'final'" />
+        }
+      } @else {
+        <app-tie [match]="null" [big]="slug === 'final'" />
+      }
+    </div>
+  </section>
+  }
+</div>
