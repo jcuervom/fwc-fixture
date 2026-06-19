@@ -301,7 +301,7 @@
   font-family: var(--disp);
   font-weight: 900;
   font-size: clamp(24px, 4vw, 40px);
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   margin: 0 0 6px;
 }
 .day {

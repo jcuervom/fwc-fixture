@@ -7,7 +7,7 @@ import {
   Match,
   RankedTeam,
   RoundSlug,
-  byMerit,
+  bestThirds,
   dayKey,
   dayTitle,
   espnDateParam,
@@ -49,14 +49,7 @@ export class WorldCupService {
   );
   private readonly bestThirdKeys = computed(
     () =>
-      new Set(
-        Object.values(this.liveGroups())
-          .map((g) => g.find((t) => t.rank === 3))
-          .filter((t): t is RankedTeam => !!t)
-          .sort(byMerit)
-          .slice(0, 8)
-          .map((t) => `${t.group}:${t.abbr}`),
-      ),
+      new Set(bestThirds(this.liveGroups()).map((t) => `${t.group}:${t.abbr}`)),
   );
   readonly groupTables = computed(() => {
     const bestThirdKeys = this.bestThirdKeys();

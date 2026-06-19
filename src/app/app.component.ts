@@ -1,14 +1,14 @@
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
-import { WorldCupService } from './worldcup.service';
-import { Bracket } from './bracket';
-import { TieCard } from './tie-card';
-import { TeamBadge } from './team-badge';
+import { WorldCupService } from './core/worldcup.service';
+import { Bracket } from './features/bracket/bracket';
+import { TeamBadge } from './shared/team-badge/team-badge';
+import { TieCard } from './shared/tie-card/tie-card';
 
 @Component({
   selector: 'app-root',
   imports: [Bracket, TeamBadge, TieCard],
-  templateUrl: './app.html',
-  styleUrl: './app.css',
+  templateUrl: './app.component.html',
+  styleUrl: './app.component.css',
 })
 export class App implements OnInit, OnDestroy {
   readonly svc = inject(WorldCupService);

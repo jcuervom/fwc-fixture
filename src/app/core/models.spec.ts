@@ -2,6 +2,9 @@ import {
   Match,
   RankedTeam,
   Side,
+  bestThirds,
+  normalize,
+  parseStandings,
   projectKnockouts,
   projectLiveStandings,
 } from './models';
@@ -54,6 +57,8 @@ const ranked = (
   name: string,
   abbr: string,
   points: number,
+  gd = 0,
+  gf = 0,
 ): RankedTeam => ({
   group,
   rank,
@@ -61,8 +66,8 @@ const ranked = (
   abbr,
   logo: null,
   points,
-  gd: 0,
-  gf: 0,
+  gd,
+  gf,
   played: 2,
   playingNow: false,
 });
@@ -140,6 +145,81 @@ describe('projectLiveStandings', () => {
   });
 });
 
+describe('ESPN normalization', () => {
+  it('parses standings rows into ranked teams', () => {
+    const groups = parseStandings({
+      children: [
+        {
+          name: 'Group D',
+          standings: {
+            entries: [
+              {
+                team: {
+                  displayName: 'United States',
+                  abbreviation: 'USA',
+                },
+                stats: [
+                  { name: 'rank', value: 1 },
+                  { name: 'points', value: 6 },
+                  { name: 'pointDifferential', value: 5 },
+                  { name: 'pointsFor', value: 6 },
+                  { name: 'gamesPlayed', value: 2 },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    expect(groups['D'][0]).toMatchObject({
+      rank: 1,
+      name: 'United States',
+      abbr: 'USA',
+      points: 6,
+      gd: 5,
+      gf: 6,
+      played: 2,
+    });
+  });
+
+  it('marks both sides as playing now for live group matches', () => {
+    const live = normalize({
+      id: 'live-match',
+      date: '2026-06-20T20:00Z',
+      season: { slug: 'group-stage' },
+      status: {
+        type: {
+          state: 'in',
+          shortDetail: "32'",
+        },
+      },
+      competitions: [
+        {
+          altGameNote: 'FIFA World Cup, Group C',
+          competitors: [
+            {
+              homeAway: 'home',
+              score: '0',
+              team: { displayName: 'Scotland', abbreviation: 'SCO' },
+            },
+            {
+              homeAway: 'away',
+              score: '1',
+              team: { displayName: 'Morocco', abbreviation: 'MAR' },
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(live.group).toBe('C');
+    expect(live.live).toBe(true);
+    expect(live.home.playingNow).toBe(true);
+    expect(live.away.playingNow).toBe(true);
+  });
+});
+
 describe('projectKnockouts', () => {
   it('projects a qualified group winner into an ESPN placeholder slot', () => {
     const groups: Record<string, RankedTeam[]> = {
@@ -196,5 +276,51 @@ describe('projectKnockouts', () => {
     const projected = projectKnockouts(fixture, groups);
 
     expect(projected[0].home.abbr).toBe('USA');
+  });
+
+  it('projects eligible best thirds into third-place slots', () => {
+    const groups: Record<string, RankedTeam[]> = {
+      A: [ranked('A', 1, 'A1', 'A1', 6), ranked('A', 3, 'A3', 'A3', 4)],
+      B: [ranked('B', 1, 'B1', 'B1', 6), ranked('B', 3, 'B3', 'B3', 2)],
+    };
+    const fixture: Match[] = [
+      {
+        id: 'third-slot',
+        dateUTC: '2026-06-29T20:00Z',
+        round: 'round-of-32',
+        group: null,
+        state: 'pre',
+        live: false,
+        detail: '22:00',
+        home: placeholder('Grupo A Gana', '1A'),
+        away: {
+          ...placeholder('Mejor 3.º', '3RD'),
+          thirdGroups: ['A', 'B'],
+        },
+        venue: '',
+      },
+    ];
+
+    const projected = projectKnockouts(fixture, groups);
+
+    expect(projected[0].away.abbr).toBe('A3');
+    expect(projected[0].away.groupSlot).toBe('3A');
+  });
+});
+
+describe('bestThirds', () => {
+  it('sorts third-place teams by points, goal difference and goals for', () => {
+    const groups: Record<string, RankedTeam[]> = {
+      A: [ranked('A', 3, 'A3', 'A3', 4, 0, 2)],
+      B: [ranked('B', 3, 'B3', 'B3', 4, 2, 1)],
+      C: [ranked('C', 3, 'C3', 'C3', 5, -1, 3)],
+      D: [ranked('D', 3, 'D3', 'D3', 4, 0, 4)],
+    };
+
+    expect(bestThirds(groups, 3).map((team) => team.abbr)).toEqual([
+      'C3',
+      'B3',
+      'D3',
+    ]);
   });
 });

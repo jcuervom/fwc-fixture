@@ -266,6 +266,17 @@ export function parseStandings(d: EspnStandings): Record<string, RankedTeam[]> {
 export const byMerit = (a: RankedTeam, b: RankedTeam) =>
   b.points - a.points || b.gd - a.gd || b.gf - a.gf;
 
+export function bestThirds(
+  groups: Record<string, RankedTeam[]>,
+  limit = 8,
+): RankedTeam[] {
+  return Object.values(groups)
+    .map((g) => g.find((t) => t.rank === 3))
+    .filter((t): t is RankedTeam => !!t)
+    .sort(byMerit)
+    .slice(0, limit);
+}
+
 interface LiveRankedTeam extends RankedTeam {
   ga: number;
   seedRank: number;
@@ -469,11 +480,7 @@ export function projectKnockouts(
   if (!Object.keys(groups).length) return list;
 
   // 8 mejores terceros (por puntos, dif. y goles a favor)
-  const thirds = Object.values(groups)
-    .map((g) => g.find((t) => t.rank === 3))
-    .filter((t): t is RankedTeam => !!t)
-    .sort(byMerit)
-    .slice(0, 8);
+  const thirds = bestThirds(groups);
 
   // asignación voraz de terceros a las plazas "3RD", respetando los grupos elegibles
   const thirdSlot = new Map<string, RankedTeam>();

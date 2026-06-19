@@ -4,8 +4,8 @@ import {
   computed,
   input,
 } from '@angular/core';
-import { Match, Side } from './models';
-import { TeamBadge } from './team-badge';
+import { Match, Side } from '../../core/models';
+import { TeamBadge } from '../team-badge/team-badge';
 
 @Component({
   selector: 'app-tie',

@@ -6,9 +6,9 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
-import { WorldCupService } from './worldcup.service';
-import { Match, ROUND_LABEL, RoundSlug } from './models';
-import { TieCard } from './tie-card';
+import { Match, ROUND_LABEL, RoundSlug } from '../../core/models';
+import { WorldCupService } from '../../core/worldcup.service';
+import { TieCard } from '../../shared/tie-card/tie-card';
 
 interface Col {
   slug: RoundSlug;
