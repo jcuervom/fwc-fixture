@@ -27,6 +27,7 @@ export interface EspnVenue {
 export interface EspnCompetition {
   competitors?: EspnCompetitor[];
   venue?: EspnVenue;
+  altGameNote?: string;
 }
 export interface EspnEvent {
   id: string;
@@ -81,6 +82,7 @@ export interface Match {
   id: string;
   dateUTC: string;
   round: RoundSlug;
+  group: string | null;
   state: 'pre' | 'in' | 'post';
   live: boolean;
   detail: string;
@@ -195,6 +197,11 @@ function formatStatus(
   return { state, detail: time || 'Por jugar' };
 }
 
+function groupOf(comp: EspnCompetition | undefined): string | null {
+  const m = /\bGroup\s+([A-L])\b/i.exec(comp?.altGameNote || '');
+  return m ? m[1].toUpperCase() : null;
+}
+
 export function normalize(e: EspnEvent): Match {
   const comp = e.competitions?.[0];
   const comps = comp?.competitors || [];
@@ -209,6 +216,7 @@ export function normalize(e: EspnEvent): Match {
     id: e.id,
     dateUTC: e.date,
     round: (e.season?.slug as RoundSlug) || 'group-stage',
+    group: groupOf(comp),
     state,
     live: state === 'in',
     detail,
@@ -245,6 +253,162 @@ export function parseStandings(d: EspnStandings): Record<string, RankedTeam[]> {
 
 export const byMerit = (a: RankedTeam, b: RankedTeam) =>
   b.points - a.points || b.gd - a.gd || b.gf - a.gf;
+
+interface LiveRankedTeam extends RankedTeam {
+  ga: number;
+  seedRank: number;
+}
+
+function teamKey(team: Pick<RankedTeam, 'abbr' | 'name'>): string {
+  return team.abbr && team.abbr !== '—'
+    ? team.abbr
+    : team.name.trim().toLowerCase();
+}
+
+function seedFromRanked(team: RankedTeam, index: number): LiveRankedTeam {
+  return {
+    group: team.group,
+    rank: team.rank,
+    name: team.name,
+    abbr: team.abbr,
+    logo: team.logo,
+    points: 0,
+    gd: 0,
+    gf: 0,
+    ga: 0,
+    played: 0,
+    seedRank: team.rank || index + 1,
+  };
+}
+
+function seedFromSide(group: string, side: Side): LiveRankedTeam {
+  return {
+    group,
+    rank: Number.MAX_SAFE_INTEGER,
+    name: side.name,
+    abbr: side.abbr,
+    logo: side.logo,
+    points: 0,
+    gd: 0,
+    gf: 0,
+    ga: 0,
+    played: 0,
+    seedRank: Number.MAX_SAFE_INTEGER,
+  };
+}
+
+function rankLiveTeams(teams: LiveRankedTeam[]): RankedTeam[] {
+  return teams
+    .sort(
+      (a, b) =>
+        b.points - a.points ||
+        b.gd - a.gd ||
+        b.gf - a.gf ||
+        a.seedRank - b.seedRank ||
+        a.name.localeCompare(b.name, 'es'),
+    )
+    .map((team, index) => ({
+      group: team.group,
+      rank: index + 1,
+      name: team.name,
+      abbr: team.abbr,
+      logo: team.logo,
+      points: team.points,
+      gd: team.gd,
+      gf: team.gf,
+      played: team.played,
+    }));
+}
+
+export function projectLiveStandings(
+  baseGroups: Record<string, RankedTeam[]>,
+  matches: Match[],
+): Record<string, RankedTeam[]> {
+  const groups = new Map<string, Map<string, LiveRankedTeam>>();
+  const finishedGames = new Map<string, number>();
+
+  for (const [group, teams] of Object.entries(baseGroups)) {
+    const seeded = new Map<string, LiveRankedTeam>();
+    teams.forEach((team, index) => {
+      seeded.set(teamKey(team), seedFromRanked(team, index));
+    });
+    groups.set(group, seeded);
+  }
+
+  const ensureTeam = (group: string, side: Side): LiveRankedTeam => {
+    let teams = groups.get(group);
+    if (!teams) {
+      teams = new Map<string, LiveRankedTeam>();
+      groups.set(group, teams);
+    }
+
+    const key = teamKey(side);
+    let team = teams.get(key);
+    if (!team) {
+      team = seedFromSide(group, side);
+      teams.set(key, team);
+    }
+    return team;
+  };
+
+  const applyResult = (
+    home: LiveRankedTeam,
+    away: LiveRankedTeam,
+    homeScore: number,
+    awayScore: number,
+  ) => {
+    home.played += 1;
+    away.played += 1;
+
+    home.gf += homeScore;
+    home.ga += awayScore;
+    away.gf += awayScore;
+    away.ga += homeScore;
+
+    home.gd = home.gf - home.ga;
+    away.gd = away.gf - away.ga;
+
+    if (homeScore > awayScore) home.points += 3;
+    else if (awayScore > homeScore) away.points += 3;
+    else {
+      home.points += 1;
+      away.points += 1;
+    }
+  };
+
+  for (const match of matches) {
+    if (
+      match.round !== 'group-stage' ||
+      !match.group ||
+      (match.state !== 'post' && match.state !== 'in') ||
+      match.home.score == null ||
+      match.away.score == null ||
+      match.home.tbd ||
+      match.away.tbd
+    )
+      continue;
+
+    const home = ensureTeam(match.group, match.home);
+    const away = ensureTeam(match.group, match.away);
+    applyResult(home, away, match.home.score, match.away.score);
+    if (match.state === 'post')
+      finishedGames.set(match.group, (finishedGames.get(match.group) || 0) + 1);
+  }
+
+  const out: Record<string, RankedTeam[]> = {};
+  for (const [group, teams] of groups) {
+    const officialGames =
+      (baseGroups[group]?.reduce((sum, team) => sum + team.played, 0) || 0) / 2;
+    const hasFullHistory =
+      officialGames === 0 || (finishedGames.get(group) || 0) >= officialGames;
+
+    out[group] = hasFullHistory
+      ? rankLiveTeams([...teams.values()])
+      : baseGroups[group] || rankLiveTeams([...teams.values()]);
+  }
+
+  return out;
+}
 
 export function rankedToSide(rt: RankedTeam): Side {
   return {

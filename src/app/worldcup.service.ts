@@ -14,6 +14,7 @@ import {
   espnDateParam,
   normalize,
   parseStandings,
+  projectLiveStandings,
   rankedToSide,
 } from './models';
 
@@ -32,16 +33,21 @@ export class WorldCupService {
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly lastUpdated = signal<Date | null>(null);
+  private readonly liveGroups = computed(() =>
+    projectLiveStandings(this.groups(), [...this.raw().values()]),
+  );
 
   /** Partidos ordenados, con las eliminatorias proyectadas según la clasificación en vivo. */
   readonly all = computed(() => {
     const list = [...this.raw().values()].sort((a, b) =>
       a.dateUTC.localeCompare(b.dateUTC),
     );
-    return this.projectKnockouts(list, this.groups());
+    return this.projectKnockouts(list, this.liveGroups());
   });
   readonly liveCount = computed(() => this.all().filter((m) => m.live).length);
-  readonly hasGroups = computed(() => Object.keys(this.groups()).length > 0);
+  readonly hasGroups = computed(
+    () => Object.keys(this.liveGroups()).length > 0,
+  );
 
   byRound(round: RoundSlug): Match[] {
     return this.all().filter((m) => m.round === round);
