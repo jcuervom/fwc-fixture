@@ -1,0 +1,132 @@
+:host {
+  --gap: 30px; /* separación entre columnas == ancho del conector */
+  --col: 168px; /* ancho mínimo de columna */
+  --conn: rgba(31, 214, 197, 0.38); /* color de los conectores */
+  display: block;
+  height: 100%;
+}
+
+.bracket-scroll {
+  height: 100%;
+  overflow: auto;
+  padding: 8px 20px 16px;
+}
+.inner {
+  min-width: calc(var(--col) * 9 + var(--gap) * 8);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* etiquetas de ronda alineadas con las columnas */
+.labels {
+  display: flex;
+  gap: var(--gap);
+  padding-bottom: 8px;
+  flex: none;
+}
+.labels .lbl {
+  flex: 1 1 0;
+  min-width: var(--col);
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.labels .lbl.center {
+  color: var(--accent);
+}
+
+/* el árbol */
+.bracket {
+  display: flex;
+  gap: var(--gap);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.round {
+  flex: 1 1 0;
+  min-width: var(--col);
+  display: flex;
+  flex-direction: column;
+}
+.tie {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  min-height: 0;
+}
+.round.center .tie {
+  justify-content: center;
+}
+.final-tie {
+  max-width: 230px;
+  margin: 0 auto;
+}
+
+/* ---- conectores ----
+   Geometría: cada columna reparte sus ties con flex:1, así el punto medio de
+   cada par coincide con el centro del tie de la ronda siguiente. */
+.conn {
+  position: absolute;
+  top: 50%;
+  height: 100%;
+  width: var(--gap);
+  pointer-events: none;
+}
+.conn::after {
+  /* brazo horizontal hasta la ronda interior */
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--conn);
+  transform: translateY(-1px);
+}
+.conn.left {
+  left: 100%;
+  border-left: 2px solid var(--conn);
+} /* barra vertical en el borde derecho de la tarjeta */
+.conn.right {
+  right: 100%;
+  border-right: 2px solid var(--conn);
+}
+.conn.straight {
+  height: 0;
+  border: 0;
+} /* semifinal → final: solo brazo */
+
+.third-wrap {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding-top: 12px;
+}
+.third-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.third-card {
+  width: 210px;
+}
+
+@media (max-width: 720px) {
+  :host {
+    --col: 150px;
+    --gap: 24px;
+  }
+  .bracket-scroll {
+    padding: 8px 12px 12px;
+  }
+}

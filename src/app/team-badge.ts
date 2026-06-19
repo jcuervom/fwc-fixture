@@ -1,26 +1,24 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   input,
   signal,
 } from '@angular/core';
-import { initialsOf } from './models';
 
 @Component({
   selector: 'app-team-badge',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (url() && !failed()) {
+    @if (logo() && !failed()) {
       <img
         class="badge"
-        [src]="url()"
+        [src]="logo()"
         alt=""
         loading="lazy"
         (error)="failed.set(true)"
       />
     } @else {
-      <span class="badge ph">{{ initials() }}</span>
+      <span class="badge ph">{{ abbr() }}</span>
     }
   `,
   styles: [
@@ -29,19 +27,22 @@ import { initialsOf } from './models';
         display: contents;
       }
       .badge {
-        width: var(--sz, 26px);
-        height: var(--sz, 26px);
+        width: var(--sz, 24px);
+        height: var(--sz, 24px);
         object-fit: contain;
         flex: none;
-        filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
       }
       .badge.ph {
+        width: var(--sz, 24px);
+        height: var(--sz, 24px);
         display: flex;
         align-items: center;
         justify-content: center;
         background: var(--ground-3);
-        border-radius: 6px;
-        font-size: 11px;
+        border-radius: 5px;
+        font-size: 9px;
+        font-weight: 700;
         font-family: var(--mono);
         color: var(--muted);
       }
@@ -49,8 +50,7 @@ import { initialsOf } from './models';
   ],
 })
 export class TeamBadge {
-  readonly url = input<string | null>(null);
-  readonly name = input<string | null>(null);
+  readonly logo = input<string | null>(null);
+  readonly abbr = input<string>('—');
   readonly failed = signal(false);
-  readonly initials = computed(() => initialsOf(this.name()));
 }

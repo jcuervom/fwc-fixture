@@ -1,82 +1,188 @@
-// Tipos y utilidades del dominio (Mundial 2026 + TheSportsDB)
+// Modelo de dominio (Mundial 2026) sobre la API pública de ESPN.
 
-export interface MatchEvent {
-  idEvent: string;
-  strHomeTeam: string;
-  strAwayTeam: string;
-  intHomeScore: string | null;
-  intAwayScore: string | null;
-  strStatus: string | null;
-  strGroup: string | null;
-  strVenue: string | null;
-  strTimestamp: string | null;
-  strTime: string | null;
-  dateEvent: string | null;
-  strHomeTeamBadge: string | null;
-  strAwayTeamBadge: string | null;
-  strLeague: string | null;
-  strSeason: string | null;
+// ---- formas crudas de ESPN (solo lo que usamos) ----
+export interface EspnTeam {
+  displayName?: string;
+  shortDisplayName?: string;
+  abbreviation?: string;
+  logo?: string;
+}
+export interface EspnCompetitor {
+  homeAway?: string;
+  score?: string;
+  team?: EspnTeam;
+}
+export interface EspnStatusType {
+  state?: string; // 'pre' | 'in' | 'post'
+  completed?: boolean;
+  description?: string;
+  detail?: string;
+  shortDetail?: string;
+}
+export interface EspnVenue {
+  fullName?: string;
+  address?: { city?: string; country?: string };
+}
+export interface EspnCompetition {
+  competitors?: EspnCompetitor[];
+  venue?: EspnVenue;
+}
+export interface EspnEvent {
+  id: string;
+  date: string;
+  shortName?: string;
+  season?: { slug?: string };
+  competitions?: EspnCompetition[];
+  status?: { type?: EspnStatusType };
+}
+export interface EspnScoreboard {
+  events?: EspnEvent[];
 }
 
-export interface ApiResponse {
-  events: MatchEvent[] | null;
+// ---- modelo normalizado ----
+export type RoundSlug =
+  | 'group-stage'
+  | 'round-of-32'
+  | 'round-of-16'
+  | 'quarterfinals'
+  | 'semifinals'
+  | '3rd-place-match'
+  | 'final';
+
+export interface Side {
+  name: string;
+  abbr: string;
+  logo: string | null;
+  score: number | null;
+  tbd: boolean; // plaza por definir (p. ej. "Ganador Grupo G")
 }
 
-export const LIVE_STATES = new Set([
-  '1H',
-  '2H',
-  'HT',
-  'ET',
-  'BT',
-  'P',
-  'PEN',
-  'LIVE',
-  'INPLAY',
-]);
-export const FINAL_STATES = new Set([
-  'FT',
-  'AET',
-  'AP',
-  'PEN FT',
-  'FT_PEN',
-  'MATCH FINISHED',
-  'AWARDED',
-]);
+export interface Match {
+  id: string;
+  dateUTC: string;
+  round: RoundSlug;
+  state: 'pre' | 'in' | 'post';
+  live: boolean;
+  detail: string; // minuto / "Final" / hora de inicio, ya en es-ES
+  home: Side;
+  away: Side;
+  venue: string;
+}
 
-const STATE_LABEL: Record<string, string> = {
-  NS: 'Por jugar',
-  '1H': '1ª parte',
-  HT: 'Descanso',
-  '2H': '2ª parte',
-  ET: 'Prórroga',
-  BT: 'Desc. prórr.',
-  P: 'Penaltis',
-  PEN: 'Penaltis',
-  FT: 'Final',
-  AET: 'Final · pr.',
-  AP: 'Final · pen.',
-  'PEN FT': 'Final · pen.',
-  PPD: 'Aplazado',
-  POSTP: 'Aplazado',
-  CANC: 'Cancelado',
-  ABD: 'Suspendido',
+export const ROUND_LABEL: Record<RoundSlug, string> = {
+  'group-stage': 'Fase de grupos',
+  'round-of-32': 'Dieciseisavos',
+  'round-of-16': 'Octavos',
+  quarterfinals: 'Cuartos',
+  semifinals: 'Semifinales',
+  '3rd-place-match': 'Tercer puesto',
+  final: 'Final',
 };
 
-export const MES = [
-  'ene',
-  'feb',
-  'mar',
-  'abr',
-  'may',
-  'jun',
-  'jul',
-  'ago',
-  'sep',
-  'oct',
-  'nov',
-  'dic',
+// Orden de columnas del bracket (de fuera hacia la final).
+export const BRACKET_ROUNDS: RoundSlug[] = [
+  'round-of-32',
+  'round-of-16',
+  'quarterfinals',
+  'semifinals',
 ];
-export const MES_LARGO = [
+
+const PLACEHOLDER_RE =
+  /winner|loser|third|place|group|runner|semifinal|quarter|tbd|\b\d[A-L]\b/i;
+
+function buildSide(c: EspnCompetitor | undefined): Side {
+  const t = c?.team || {};
+  const logo = t.logo || null;
+  const name = t.displayName || t.shortDisplayName || 'Por definir';
+  const score = c?.score != null && c.score !== '' ? Number(c.score) : null;
+  const tbd = !logo && PLACEHOLDER_RE.test(name);
+  return {
+    name: tbd ? translatePlaceholder(name) : name,
+    abbr: t.abbreviation || '—',
+    logo,
+    score,
+    tbd,
+  };
+}
+
+function translatePlaceholder(name: string): string {
+  return name
+    .replace(/Round of 32/gi, '16avos')
+    .replace(/Round of 16/gi, 'Octavos')
+    .replace(/Quarterfinals?/gi, 'Cuartos')
+    .replace(/Semifinals?/gi, 'Semis')
+    .replace(/Winners?/gi, 'Gana')
+    .replace(/Runners?[- ]?up/gi, '2.º')
+    .replace(/Third Place/gi, '3.º')
+    .replace(/Group/gi, 'Grupo')
+    .replace(/Loser/gi, 'Pierde')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function formatStatus(
+  type: EspnStatusType | undefined,
+  dateUTC: string,
+): { state: Match['state']; detail: string } {
+  const state = (type?.state as Match['state']) || 'pre';
+  if (state === 'in') {
+    const raw = (type?.shortDetail || type?.detail || '').trim();
+    const map: Record<string, string> = {
+      HT: 'DESC.',
+      Halftime: 'DESC.',
+      ET: 'PRÓRR.',
+    };
+    return { state, detail: map[raw] || raw || 'En juego' };
+  }
+  if (state === 'post') {
+    const d = (type?.detail || '').toUpperCase();
+    if (d.includes('PEN')) return { state, detail: 'Final · pen.' };
+    if (d.includes('AET') || d.includes('ET'))
+      return { state, detail: 'Final · pr.' };
+    return { state, detail: 'Final' };
+  }
+  // pre → hora local de inicio
+  const dt = new Date(dateUTC);
+  const time = Number.isNaN(dt.getTime())
+    ? ''
+    : dt.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  return { state, detail: time || 'Por jugar' };
+}
+
+export function normalize(e: EspnEvent): Match {
+  const comp = e.competitions?.[0];
+  const comps = comp?.competitors || [];
+  const home = comps.find((c) => c.homeAway === 'home') || comps[0];
+  const away = comps.find((c) => c.homeAway === 'away') || comps[1];
+  const { state, detail } = formatStatus(e.status?.type, e.date);
+  const v = comp?.venue;
+  let venue = '';
+  if (v?.fullName)
+    venue = v.address?.city ? `${v.fullName} · ${v.address.city}` : v.fullName;
+  return {
+    id: e.id,
+    dateUTC: e.date,
+    round: (e.season?.slug as RoundSlug) || 'group-stage',
+    state,
+    live: state === 'in',
+    detail,
+    home: buildSide(home),
+    away: buildSide(away),
+    venue,
+  };
+}
+
+// ---- utilidades de fecha (es-ES) ----
+const DIA = [
+  'domingo',
+  'lunes',
+  'martes',
+  'miércoles',
+  'jueves',
+  'viernes',
+  'sábado',
+];
+const MES = [
   'enero',
   'febrero',
   'marzo',
@@ -90,70 +196,17 @@ export const MES_LARGO = [
   'noviembre',
   'diciembre',
 ];
-export const DIA = [
-  'domingo',
-  'lunes',
-  'martes',
-  'miércoles',
-  'jueves',
-  'viernes',
-  'sábado',
-];
 
-export const statusOf = (e: MatchEvent): string =>
-  (e.strStatus || '').trim().toUpperCase();
-export const isLive = (e: MatchEvent): boolean => LIVE_STATES.has(statusOf(e));
-export const isFinal = (e: MatchEvent): boolean =>
-  FINAL_STATES.has(statusOf(e));
-export const hasScore = (e: MatchEvent): boolean =>
-  e.intHomeScore != null &&
-  e.intHomeScore !== '' &&
-  e.intAwayScore != null &&
-  e.intAwayScore !== '';
-
-export function stateLabel(e: MatchEvent): string {
-  const s = statusOf(e);
-  if (STATE_LABEL[s]) return STATE_LABEL[s];
-  return !s || s === 'NS' ? 'Por jugar' : s;
+export function dayKey(dateUTC: string): string {
+  const d = new Date(dateUTC);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-CA'); // YYYY-MM-DD local
 }
-
-export function kickoffLocal(e: MatchEvent): string {
-  const ts =
-    e.strTimestamp ||
-    (e.dateEvent && e.strTime ? `${e.dateEvent}T${e.strTime}Z` : null);
-  if (!ts) return '';
-  const d = new Date(ts.endsWith('Z') || ts.includes('+') ? ts : ts + 'Z');
-  if (isNaN(d.getTime())) return '';
-  return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+export function dayTitle(dateUTC: string): string {
+  const d = new Date(dateUTC);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${DIA[d.getDay()]} ${d.getDate()} ${MES[d.getMonth()]}`;
 }
-
-export function shortDate(iso: string | null): string {
-  if (!iso) return '';
-  const d = new Date(iso + 'T00:00:00');
-  return `${d.getDate()} ${MES[d.getMonth()]}`;
-}
-
-export function stadiumShort(v: string | null): string {
-  return v ? v.split(',')[0] : '';
-}
-
-export function initialsOf(name: string | null): string {
-  return (name || '?')
-    .split(/\s+/)
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 3)
-    .toUpperCase();
-}
-
-/** Lista de fechas ISO entre dos extremos inclusive. */
-export function dateRange(a: string, b: string): string[] {
-  const out: string[] = [];
-  const d = new Date(a + 'T00:00:00Z');
-  const end = new Date(b + 'T00:00:00Z');
-  while (d <= end) {
-    out.push(d.toISOString().slice(0, 10));
-    d.setUTCDate(d.getUTCDate() + 1);
-  }
-  return out;
+export function espnDateParam(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}`;
 }

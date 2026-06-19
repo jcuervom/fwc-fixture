@@ -24,7 +24,7 @@ El repo incluye un workflow en `.github/workflows/deploy.yml` que compila y publ
 3. Cada `push` a `main` despliega en `https://<usuario>.github.io/<repo>/`.
 
 El workflow ajusta el `--base-href` al nombre del repositorio automáticamente, así que funciona
-en cualquier *project page* sin tocar nada.
+en cualquier _project page_ sin tocar nada.
 
 ### Primera subida
 
@@ -36,5 +36,5 @@ gh repo create fwc-fixture --public --source=. --push   # o crea el repo en gith
 
 ## Datos y créditos
 
-Marcadores no oficiales servidos por TheSportsDB. La liga usada es *FIFA World Cup* (idLeague 4429),
+Marcadores no oficiales servidos por TheSportsDB. La liga usada es _FIFA World Cup_ (idLeague 4429),
 temporada 2026, consultada por día con `eventsday.php`.

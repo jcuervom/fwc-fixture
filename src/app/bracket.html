@@ -1,0 +1,57 @@
+<div class="bracket-scroll">
+  <div class="inner">
+    <!-- fila de etiquetas, alineada con las columnas -->
+    <div class="labels">
+      @for (c of leftCols; track c.slug) {
+      <div class="lbl">{{ label(c.slug) }}</div>
+      }
+      <div class="lbl center">Final</div>
+      @for (c of rightCols; track c.slug) {
+      <div class="lbl">{{ label(c.slug) }}</div>
+      }
+    </div>
+
+    <div class="bracket">
+      <!-- lado izquierdo -->
+      @for (c of leftCols; track c.slug) {
+      <div class="round left">
+        @for (tie of sideTies(c.slug, c.count, 'left'); track $index) {
+        <div class="tie">
+          @if ($even) {
+          <span class="conn left" [class.straight]="isSingle(c.count)"></span>
+          }
+          <app-tie [match]="tie" />
+        </div>
+        }
+      </div>
+      }
+
+      <!-- columna central: final -->
+      <div class="round center">
+        <div class="tie final-tie">
+          <app-tie [match]="finalMatch()" [big]="true" />
+        </div>
+      </div>
+
+      <!-- lado derecho -->
+      @for (c of rightCols; track c.slug) {
+      <div class="round right">
+        @for (tie of sideTies(c.slug, c.count, 'right'); track $index) {
+        <div class="tie">
+          @if ($even) {
+          <span class="conn right" [class.straight]="isSingle(c.count)"></span>
+          }
+          <app-tie [match]="tie" />
+        </div>
+        }
+      </div>
+      }
+    </div>
+
+    <!-- tercer puesto, fuera del árbol -->
+    <div class="third-wrap">
+      <div class="third-label">Tercer puesto</div>
+      <div class="third-card"><app-tie [match]="thirdMatch()" /></div>
+    </div>
+  </div>
+</div>
