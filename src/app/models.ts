@@ -422,6 +422,86 @@ export function rankedToSide(rt: RankedTeam): Side {
   };
 }
 
+function rankSlotOf(side: Side): { rank: number; group: string } | null {
+  const direct = /^([12])([A-L])$/.exec(side.abbr);
+  if (direct) return { rank: Number(direct[1]), group: direct[2] };
+
+  const first =
+    /^(?:Grupo|Group)\s+([A-L])\s+(?:Gana|Winner|1\.º|1st(?: Place)?)$/i.exec(
+      side.name,
+    );
+  if (first) return { rank: 1, group: first[1].toUpperCase() };
+
+  const second =
+    /^(?:Grupo|Group)\s+([A-L])\s+(?:2\.º|2nd(?: Place)?|Runners?[- ]?up)$/i.exec(
+      side.name,
+    );
+  if (second) return { rank: 2, group: second[1].toUpperCase() };
+
+  return null;
+}
+
+export function projectKnockouts(
+  list: Match[],
+  groups: Record<string, RankedTeam[]>,
+): Match[] {
+  if (!Object.keys(groups).length) return list;
+
+  // 8 mejores terceros (por puntos, dif. y goles a favor)
+  const thirds = Object.values(groups)
+    .map((g) => g.find((t) => t.rank === 3))
+    .filter((t): t is RankedTeam => !!t)
+    .sort(byMerit)
+    .slice(0, 8);
+
+  // asignación voraz de terceros a las plazas "3RD", respetando los grupos elegibles
+  const thirdSlot = new Map<string, RankedTeam>();
+  const used = new Set<string>();
+  const slots: { key: string; eligible: string[] }[] = [];
+  for (const m of list) {
+    if (m.round === 'group-stage') continue;
+    for (const ha of ['home', 'away'] as const) {
+      const s = m[ha];
+      if (s.thirdGroups)
+        slots.push({ key: `${m.id}:${ha}`, eligible: s.thirdGroups });
+    }
+  }
+  for (const slot of slots) {
+    const pick =
+      thirds.find(
+        (t) => !used.has(t.group) && slot.eligible.includes(t.group),
+      ) || thirds.find((t) => !used.has(t.group));
+    if (pick) {
+      used.add(pick.group);
+      thirdSlot.set(slot.key, pick);
+    }
+  }
+
+  const resolve = (s: Side, key: string): Side => {
+    if (!s.tbd) return s;
+    const gp = rankSlotOf(s);
+    if (gp) {
+      const team = (groups[gp.group] || []).find((t) => t.rank === gp.rank);
+      return team ? rankedToSide(team) : s;
+    }
+    if (s.thirdGroups) {
+      const team = thirdSlot.get(key);
+      return team ? rankedToSide(team) : s;
+    }
+    return s; // ganadores de rondas eliminatorias: no se predicen
+  };
+
+  return list.map((m) =>
+    m.round === 'group-stage'
+      ? m
+      : {
+          ...m,
+          home: resolve(m.home, `${m.id}:home`),
+          away: resolve(m.away, `${m.id}:away`),
+        },
+  );
+}
+
 // ---- utilidades de fecha (es-ES) ----
 const DIA = [
   'domingo',

@@ -7,15 +7,13 @@ import {
   Match,
   RankedTeam,
   RoundSlug,
-  Side,
-  byMerit,
   dayKey,
   dayTitle,
   espnDateParam,
   normalize,
+  projectKnockouts,
   parseStandings,
   projectLiveStandings,
-  rankedToSide,
 } from './models';
 
 const BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world';
@@ -42,7 +40,7 @@ export class WorldCupService {
     const list = [...this.raw().values()].sort((a, b) =>
       a.dateUTC.localeCompare(b.dateUTC),
     );
-    return this.projectKnockouts(list, this.liveGroups());
+    return projectKnockouts(list, this.liveGroups());
   });
   readonly liveCount = computed(() => this.all().filter((m) => m.live).length);
   readonly hasGroups = computed(
@@ -64,70 +62,6 @@ export class WorldCupService {
   });
   matchesOnDay(key: string): Match[] {
     return this.all().filter((m) => dayKey(m.dateUTC) === key);
-  }
-
-  // ---------------- proyección de clasificados ----------------
-  private projectKnockouts(
-    list: Match[],
-    groups: Record<string, RankedTeam[]>,
-  ): Match[] {
-    if (!Object.keys(groups).length) return list;
-
-    // 8 mejores terceros (por puntos, dif. y goles a favor)
-    const thirds = Object.values(groups)
-      .map((g) => g.find((t) => t.rank === 3))
-      .filter((t): t is RankedTeam => !!t)
-      .sort(byMerit)
-      .slice(0, 8);
-
-    // asignación voraz de terceros a las plazas "3RD", respetando los grupos elegibles
-    const thirdSlot = new Map<string, RankedTeam>();
-    const used = new Set<string>();
-    const slots: { key: string; eligible: string[] }[] = [];
-    for (const m of list) {
-      if (m.round === 'group-stage') continue;
-      for (const ha of ['home', 'away'] as const) {
-        const s = m[ha];
-        if (s.thirdGroups)
-          slots.push({ key: `${m.id}:${ha}`, eligible: s.thirdGroups });
-      }
-    }
-    for (const slot of slots) {
-      const pick =
-        thirds.find(
-          (t) => !used.has(t.group) && slot.eligible.includes(t.group),
-        ) || thirds.find((t) => !used.has(t.group));
-      if (pick) {
-        used.add(pick.group);
-        thirdSlot.set(slot.key, pick);
-      }
-    }
-
-    const resolve = (s: Side, key: string): Side => {
-      if (!s.tbd) return s;
-      const gp = /^([12])([A-L])$/.exec(s.abbr);
-      if (gp) {
-        const team = (groups[gp[2]] || []).find(
-          (t) => t.rank === Number(gp[1]),
-        );
-        return team ? rankedToSide(team) : s;
-      }
-      if (s.thirdGroups) {
-        const team = thirdSlot.get(key);
-        return team ? rankedToSide(team) : s;
-      }
-      return s; // ganadores de rondas eliminatorias: no se predicen
-    };
-
-    return list.map((m) =>
-      m.round === 'group-stage'
-        ? m
-        : {
-            ...m,
-            home: resolve(m.home, `${m.id}:home`),
-            away: resolve(m.away, `${m.id}:away`),
-          },
-    );
   }
 
   // ---------------- carga ----------------

@@ -1,4 +1,10 @@
-import { Match, RankedTeam, Side, projectLiveStandings } from './models';
+import {
+  Match,
+  RankedTeam,
+  Side,
+  projectKnockouts,
+  projectLiveStandings,
+} from './models';
 
 const side = (name: string, abbr: string, score: number): Side => ({
   name,
@@ -6,6 +12,16 @@ const side = (name: string, abbr: string, score: number): Side => ({
   logo: null,
   score,
   tbd: false,
+  thirdGroups: null,
+  projected: false,
+});
+
+const placeholder = (name: string, abbr: string): Side => ({
+  name,
+  abbr,
+  logo: null,
+  score: null,
+  tbd: true,
   thirdGroups: null,
   projected: false,
 });
@@ -26,6 +42,24 @@ const match = (
   home,
   away,
   venue: '',
+});
+
+const ranked = (
+  group: string,
+  rank: number,
+  name: string,
+  abbr: string,
+  points: number,
+): RankedTeam => ({
+  group,
+  rank,
+  name,
+  abbr,
+  logo: null,
+  points,
+  gd: 0,
+  gf: 0,
+  played: 2,
 });
 
 describe('projectLiveStandings', () => {
@@ -91,5 +125,63 @@ describe('projectLiveStandings', () => {
       ['BRA', 1],
       ['HAI', 0],
     ]);
+  });
+});
+
+describe('projectKnockouts', () => {
+  it('projects a qualified group winner into an ESPN placeholder slot', () => {
+    const groups: Record<string, RankedTeam[]> = {
+      D: [
+        ranked('D', 1, 'United States', 'USA', 6),
+        ranked('D', 2, 'Australia', 'AUS', 3),
+      ],
+    };
+    const fixture: Match[] = [
+      {
+        id: '760494',
+        dateUTC: '2026-06-29T20:00Z',
+        round: 'round-of-32',
+        group: null,
+        state: 'pre',
+        live: false,
+        detail: '22:00',
+        home: placeholder('Grupo D Gana', '1D'),
+        away: placeholder('Por definir', 'TBD'),
+        venue: '',
+      },
+    ];
+
+    const projected = projectKnockouts(fixture, groups);
+
+    expect(projected[0].home.name).toBe('United States');
+    expect(projected[0].home.abbr).toBe('USA');
+    expect(projected[0].home.projected).toBeTrue();
+  });
+
+  it('can resolve a group slot even when ESPN uses TBD as the abbreviation', () => {
+    const groups: Record<string, RankedTeam[]> = {
+      D: [
+        ranked('D', 1, 'United States', 'USA', 6),
+        ranked('D', 2, 'Australia', 'AUS', 3),
+      ],
+    };
+    const fixture: Match[] = [
+      {
+        id: '760494',
+        dateUTC: '2026-06-29T20:00Z',
+        round: 'round-of-32',
+        group: null,
+        state: 'pre',
+        live: false,
+        detail: '22:00',
+        home: placeholder('Grupo D Gana', 'TBD'),
+        away: placeholder('Por definir', 'TBD'),
+        venue: '',
+      },
+    ];
+
+    const projected = projectKnockouts(fixture, groups);
+
+    expect(projected[0].home.abbr).toBe('USA');
   });
 });
