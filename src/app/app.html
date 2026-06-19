@@ -6,10 +6,12 @@
   <div class="bar-right">
     @if (svc.liveCount()) {
     <span class="livecount"
-      ><span class="dot"></span>{{ svc.liveCount() }} en juego</span
+      ><span class="dot"></span>{{ svc.liveCount() }}<span class="lc-txt"
+        >&nbsp;en juego</span
+      ></span
     >
     } @else {
-    <span class="livecount none">Sin partidos en juego</span>
+    <span class="livecount none lc-txt">Sin partidos en juego</span>
     }
     <span class="updated"
       >@if (updatedLabel()) { act. {{ updatedLabel() }} }</span

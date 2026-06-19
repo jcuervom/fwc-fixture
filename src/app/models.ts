@@ -6,6 +6,7 @@ export interface EspnTeam {
   shortDisplayName?: string;
   abbreviation?: string;
   logo?: string;
+  logos?: { href?: string }[];
 }
 export interface EspnCompetitor {
   homeAway?: string;
@@ -13,7 +14,7 @@ export interface EspnCompetitor {
   team?: EspnTeam;
 }
 export interface EspnStatusType {
-  state?: string; // 'pre' | 'in' | 'post'
+  state?: string;
   completed?: boolean;
   description?: string;
   detail?: string;
@@ -39,6 +40,23 @@ export interface EspnScoreboard {
   events?: EspnEvent[];
 }
 
+// standings
+export interface EspnStat {
+  name?: string;
+  value?: number;
+}
+export interface EspnEntry {
+  team?: EspnTeam;
+  stats?: EspnStat[];
+}
+export interface EspnGroup {
+  name?: string;
+  standings?: { entries?: EspnEntry[] };
+}
+export interface EspnStandings {
+  children?: EspnGroup[];
+}
+
 // ---- modelo normalizado ----
 export type RoundSlug =
   | 'group-stage'
@@ -51,10 +69,12 @@ export type RoundSlug =
 
 export interface Side {
   name: string;
-  abbr: string;
+  abbr: string; // sigla de equipo o código de plaza ("1C", "2A", "3RD"…)
   logo: string | null;
   score: number | null;
-  tbd: boolean; // plaza por definir (p. ej. "Ganador Grupo G")
+  tbd: boolean; // plaza sin equipo confirmado
+  thirdGroups: string[] | null; // para plazas de "mejor tercero": grupos elegibles
+  projected: boolean; // equipo inferido por la clasificación en vivo
 }
 
 export interface Match {
@@ -63,10 +83,22 @@ export interface Match {
   round: RoundSlug;
   state: 'pre' | 'in' | 'post';
   live: boolean;
-  detail: string; // minuto / "Final" / hora de inicio, ya en es-ES
+  detail: string;
   home: Side;
   away: Side;
   venue: string;
+}
+
+export interface RankedTeam {
+  group: string;
+  rank: number;
+  name: string;
+  abbr: string;
+  logo: string | null;
+  points: number;
+  gd: number;
+  gf: number;
+  played: number;
 }
 
 export const ROUND_LABEL: Record<RoundSlug, string> = {
@@ -79,7 +111,6 @@ export const ROUND_LABEL: Record<RoundSlug, string> = {
   final: 'Final',
 };
 
-// Orden de columnas del bracket (de fuera hacia la final).
 export const BRACKET_ROUNDS: RoundSlug[] = [
   'round-of-32',
   'round-of-16',
@@ -88,20 +119,35 @@ export const BRACKET_ROUNDS: RoundSlug[] = [
 ];
 
 const PLACEHOLDER_RE =
-  /winner|loser|third|place|group|runner|semifinal|quarter|tbd|\b\d[A-L]\b/i;
+  /winner|loser|third|place|group|runner|semifinal|quarter|tbd|round of|\b\d[A-L]\b/i;
+
+function logoOf(t: EspnTeam): string | null {
+  return t.logo || t.logos?.[0]?.href || null;
+}
 
 function buildSide(c: EspnCompetitor | undefined): Side {
   const t = c?.team || {};
-  const logo = t.logo || null;
-  const name = t.displayName || t.shortDisplayName || 'Por definir';
+  const logo = logoOf(t);
+  const rawName = t.displayName || t.shortDisplayName || 'Por definir';
   const score = c?.score != null && c.score !== '' ? Number(c.score) : null;
-  const tbd = !logo && PLACEHOLDER_RE.test(name);
+  const tbd = !logo && PLACEHOLDER_RE.test(rawName);
+  let thirdGroups: string[] | null = null;
+  if (tbd) {
+    const m = /Third Place Group\s+([A-L/]+)/i.exec(rawName);
+    if (m)
+      thirdGroups = m[1]
+        .split('/')
+        .map((s) => s.trim())
+        .filter(Boolean);
+  }
   return {
-    name: tbd ? translatePlaceholder(name) : name,
+    name: tbd ? translatePlaceholder(rawName) : rawName,
     abbr: t.abbreviation || '—',
     logo,
     score,
     tbd,
+    thirdGroups,
+    projected: false,
   };
 }
 
@@ -111,9 +157,10 @@ function translatePlaceholder(name: string): string {
     .replace(/Round of 16/gi, 'Octavos')
     .replace(/Quarterfinals?/gi, 'Cuartos')
     .replace(/Semifinals?/gi, 'Semis')
+    .replace(/Third Place Group\s+[A-L/]+/gi, 'Mejor 3.º')
     .replace(/Winners?/gi, 'Gana')
     .replace(/Runners?[- ]?up/gi, '2.º')
-    .replace(/Third Place/gi, '3.º')
+    .replace(/(\d)(st|nd|rd|th) Place/gi, '$1.º')
     .replace(/Group/gi, 'Grupo')
     .replace(/Loser/gi, 'Pierde')
     .replace(/\s+/g, ' ')
@@ -141,7 +188,6 @@ function formatStatus(
       return { state, detail: 'Final · pr.' };
     return { state, detail: 'Final' };
   }
-  // pre → hora local de inicio
   const dt = new Date(dateUTC);
   const time = Number.isNaN(dt.getTime())
     ? ''
@@ -172,6 +218,46 @@ export function normalize(e: EspnEvent): Match {
   };
 }
 
+// ---- clasificaciones ----
+export function parseStandings(d: EspnStandings): Record<string, RankedTeam[]> {
+  const out: Record<string, RankedTeam[]> = {};
+  const stat = (e: EspnEntry, n: string) =>
+    e.stats?.find((s) => s.name === n)?.value ?? 0;
+  for (const g of d.children || []) {
+    const letter = (g.name || '').replace(/^Group\s+/i, '').trim();
+    if (!letter) continue;
+    const teams: RankedTeam[] = (g.standings?.entries || []).map((e) => ({
+      group: letter,
+      rank: stat(e, 'rank'),
+      name: e.team?.displayName || e.team?.shortDisplayName || '',
+      abbr: e.team?.abbreviation || '—',
+      logo: e.team ? logoOf(e.team) : null,
+      points: stat(e, 'points'),
+      gd: stat(e, 'pointDifferential'),
+      gf: stat(e, 'pointsFor'),
+      played: stat(e, 'gamesPlayed'),
+    }));
+    teams.sort((a, b) => a.rank - b.rank);
+    out[letter] = teams;
+  }
+  return out;
+}
+
+export const byMerit = (a: RankedTeam, b: RankedTeam) =>
+  b.points - a.points || b.gd - a.gd || b.gf - a.gf;
+
+export function rankedToSide(rt: RankedTeam): Side {
+  return {
+    name: rt.name,
+    abbr: rt.abbr,
+    logo: rt.logo,
+    score: null,
+    tbd: false,
+    thirdGroups: null,
+    projected: true,
+  };
+}
+
 // ---- utilidades de fecha (es-ES) ----
 const DIA = [
   'domingo',
@@ -199,7 +285,7 @@ const MES = [
 
 export function dayKey(dateUTC: string): string {
   const d = new Date(dateUTC);
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-CA'); // YYYY-MM-DD local
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-CA');
 }
 export function dayTitle(dateUTC: string): string {
   const d = new Date(dateUTC);

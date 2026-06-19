@@ -22,24 +22,43 @@ import { TeamBadge } from './team-badge';
       @if (m) {
         <div class="row" [class.win]="homeWins()">
           <app-team-badge [logo]="m.home.logo" [abbr]="m.home.abbr" />
-          <span class="nm" [class.tbd]="m.home.tbd">{{ m.home.name }}</span>
+          <span
+            class="nm"
+            [class.tbd]="m.home.tbd"
+            [class.proj]="m.home.projected"
+            >{{ m.home.name }}</span
+          >
           <span class="sc">{{ showScore() ? (m.home.score ?? '') : '' }}</span>
         </div>
         <div class="row" [class.win]="awayWins()">
           <app-team-badge [logo]="m.away.logo" [abbr]="m.away.abbr" />
-          <span class="nm" [class.tbd]="m.away.tbd">{{ m.away.name }}</span>
+          <span
+            class="nm"
+            [class.tbd]="m.away.tbd"
+            [class.proj]="m.away.projected"
+            >{{ m.away.name }}</span
+          >
           <span class="sc">{{ showScore() ? (m.away.score ?? '') : '' }}</span>
         </div>
-        <div
-          class="st"
-          [class.live]="m.live"
-          [class.final]="m.state === 'post'"
-        >
-          @if (m.live) {
-            <span class="dot"></span>
-          }
-          {{ m.detail }}
-        </div>
+        @if (projected()) {
+          <div
+            class="st proj"
+            title="Equipos proyectados según la clasificación en vivo"
+          >
+            ⟿ Proyectado · {{ m.detail }}
+          </div>
+        } @else {
+          <div
+            class="st"
+            [class.live]="m.live"
+            [class.final]="m.state === 'post'"
+          >
+            @if (m.live) {
+              <span class="dot"></span>
+            }
+            {{ m.detail }}
+          </div>
+        }
       } @else {
         <div class="row tbd-row"><span class="nm tbd">Por definir</span></div>
         <div class="row tbd-row"><span class="nm tbd">Por definir</span></div>
@@ -94,6 +113,7 @@ import { TeamBadge } from './team-badge';
         min-width: 0;
         font-weight: 600;
         font-size: 13px;
+        color: var(--text);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -107,11 +127,9 @@ import { TeamBadge } from './team-badge';
         font-weight: 500;
         font-style: italic;
       }
-      .row.win .nm {
-        color: var(--text);
-      }
-      .row:not(.win) .nm:not(.tbd) {
-        color: var(--text);
+      .nm.proj {
+        color: var(--accent-2);
+        border-bottom: 1px dashed rgba(31, 214, 197, 0.55);
       }
       .sc {
         font-family: var(--mono);
@@ -123,6 +141,9 @@ import { TeamBadge } from './team-badge';
       }
       .card.big .sc {
         font-size: 20px;
+      }
+      .row.win .nm {
+        color: var(--text);
       }
       .row.win .sc {
         color: var(--accent-2);
@@ -147,6 +168,11 @@ import { TeamBadge } from './team-badge';
       }
       .st.final {
         color: var(--gold);
+      }
+      .st.proj {
+        color: var(--accent-2);
+        text-transform: none;
+        letter-spacing: 0.04em;
       }
       .tbd-row {
         --sz: 20px;
@@ -197,19 +223,24 @@ export class TieCard {
     const m = this.match();
     return !!m && m.state !== 'pre';
   });
-  readonly homeWins = computed(
-    () =>
-      this.decided() && this.match()!.home.score! > this.match()!.away.score!,
-  );
-  readonly awayWins = computed(
-    () =>
-      this.decided() && this.match()!.away.score! > this.match()!.home.score!,
-  );
-
-  private decided(): boolean {
+  readonly projected = computed(() => {
     const m = this.match();
-    return (
-      !!m && m.state === 'post' && m.home.score != null && m.away.score != null
-    );
+    return !!m && m.state === 'pre' && (m.home.projected || m.away.projected);
+  });
+  readonly homeWins = computed(() => this.winner() === 'home');
+  readonly awayWins = computed(() => this.winner() === 'away');
+
+  private winner(): 'home' | 'away' | null {
+    const m = this.match();
+    if (
+      !m ||
+      m.state !== 'post' ||
+      m.home.score == null ||
+      m.away.score == null
+    )
+      return null;
+    if (m.home.score > m.away.score) return 'home';
+    if (m.away.score > m.home.score) return 'away';
+    return null;
   }
 }

@@ -27,6 +27,10 @@
   display: flex;
   align-items: baseline;
   gap: 9px;
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
   font-family: var(--disp);
   font-weight: 900;
   font-size: 19px;
@@ -49,6 +53,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  flex: none;
 }
 .livecount {
   display: flex;
@@ -59,6 +64,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--accent);
+  white-space: nowrap;
 }
 .livecount.none {
   color: var(--muted);
@@ -196,6 +202,61 @@ footer a {
 }
 footer a:hover {
   text-decoration: underline;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 680px) {
+  :host {
+    --bar-h: 52px;
+  }
+  .bar {
+    gap: 10px;
+    padding: 0 12px;
+  }
+  .brand {
+    font-size: 16px;
+    gap: 7px;
+  }
+  .brand .live-word {
+    display: none;
+  }
+  .bar-right {
+    gap: 9px;
+  }
+  .updated {
+    display: none;
+  }
+  .lc-txt {
+    display: none;
+  }
+  .livecount {
+    font-size: 12px;
+  }
+  .livecount.none {
+    display: none;
+  }
+  .toggle {
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+  .wrap {
+    padding: 0 14px;
+  }
+  .all {
+    padding: 28px 0 56px;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 380px) {
+  .brand .live-word {
+    display: none;
+  }
+  .toggle .lbl {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
