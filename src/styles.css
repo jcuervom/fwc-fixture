@@ -1,0 +1,39 @@
+/* Tema global — Mundial 26 · En Vivo */
+:root {
+  --ground: #0e1613;       /* ink / charcoal-green — el césped de noche */
+  --ground-2: #13201b;     /* superficie elevada */
+  --ground-3: #182a23;     /* hover / chips */
+  --text: #f2efe6;         /* blanco cálido */
+  --muted: #8fa39a;        /* verde-gris desaturado */
+  --line: rgba(242, 239, 230, 0.1);
+  --line-strong: rgba(242, 239, 230, 0.18);
+  --accent: #ff2d78;       /* magenta eléctrico — la señal de "en vivo" */
+  --accent-2: #1fd6c5;     /* turquesa — datos y próximos */
+  --gold: #e9c46a;         /* finales / marcadores finales */
+  --disp: 'Archivo', system-ui, sans-serif;
+  --mono: 'Space Mono', ui-monospace, monospace;
+  --body: 'Inter', system-ui, sans-serif;
+  --maxw: 1080px;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+  background-image:
+    radial-gradient(1200px 600px at 80% -10%, rgba(31, 214, 197, 0.06), transparent 60%),
+    radial-gradient(900px 500px at -10% 0%, rgba(255, 45, 120, 0.07), transparent 55%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+a { color: inherit; }
+
+:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }

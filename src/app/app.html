@@ -1,0 +1,188 @@
+<header class="bar">
+  <div class="wrap bar-inner">
+    <div class="brand">
+      MUNDIAL <span class="num">26</span
+      ><span class="live-word">EN&nbsp;VIVO</span>
+    </div>
+    <div class="bar-right">
+      @if (svc.liveEvents().length) {
+      <span class="livecount"
+        ><span class="dot"></span>{{ svc.liveEvents().length }} en juego</span
+      >
+      } @else {
+      <span class="livecount none">Sin partidos en juego</span>
+      }
+      <span class="updated"
+        >@if (updatedLabel()) { actualizado {{ updatedLabel() }} }</span
+      >
+      <button
+        class="toggle"
+        [class.on]="autoOn()"
+        (click)="toggleAuto()"
+        type="button"
+        [attr.aria-pressed]="autoOn()"
+        title="Actualización automática"
+      >
+        <span class="sw"></span>{{ autoOn() ? 'Auto' : 'Pausado' }}
+      </button>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    @if (svc.liveEvents().length) {
+    <p class="eyebrow live"><span class="dot"></span> En juego ahora mismo</p>
+    } @else if (svc.upcoming().length) {
+    <p class="eyebrow"><span class="dot teal"></span> Próximos partidos</p>
+    } @else {
+    <p class="eyebrow">Fixtures · Canadá · México · EE. UU.</p>
+    }
+
+    <h1>El Mundial, <em>minuto a minuto</em>.</h1>
+    <p class="sub">
+      Calendario completo del torneo con los marcadores en directo. Se actualiza
+      solo mientras hay partidos en juego.
+    </p>
+
+    @if (svc.notice()) {
+    <div class="banner">{{ svc.notice() }}</div>
+    }
+
+    <div class="live-rail" aria-live="polite">
+      @for (e of heroEvents(); track e.idEvent) {
+      <article class="live-card">
+        @if (isLive(e)) {
+        <span class="status"><span class="dot"></span>{{ stateLabel(e) }}</span>
+        } @else {
+        <span class="status upcoming"
+          >{{ kickoffLocal(e) || 'Por jugar' }} · {{ shortDate(e.dateEvent)
+          }}</span
+        >
+        }
+        <div class="lc-row">
+          <div class="lc-team">
+            <app-team-badge [url]="e.strHomeTeamBadge" [name]="e.strHomeTeam" />
+            <span class="name">{{ e.strHomeTeam }}</span>
+          </div>
+          <span class="lc-score"
+            >{{ (isLive(e) || hasScore(e)) ? (e.intHomeScore ?? '–') : ''
+            }}</span
+          >
+        </div>
+        <div class="lc-row">
+          <div class="lc-team">
+            <app-team-badge [url]="e.strAwayTeamBadge" [name]="e.strAwayTeam" />
+            <span class="name">{{ e.strAwayTeam }}</span>
+          </div>
+          <span class="lc-score"
+            >{{ (isLive(e) || hasScore(e)) ? (e.intAwayScore ?? '–') : ''
+            }}</span
+          >
+        </div>
+        <div class="lc-meta">
+          <span>{{ e.strGroup || 'Mundial 2026' }}</span>
+          <span>{{ stadiumShort(e.strVenue) }}</span>
+        </div>
+      </article>
+      }
+    </div>
+  </div>
+</section>
+
+<nav class="datenav-wrap" aria-label="Días del torneo">
+  <div class="wrap">
+    <div class="datenav">
+      @for (d of visibleDates(); track d) {
+      <button
+        class="chip"
+        type="button"
+        [class.today]="d === svc.todayISO"
+        [class.active]="d === currentDay()"
+        (click)="selectDay(d)"
+      >
+        <span class="d">{{ dayNumber(d) }}</span>
+        <span class="m">{{ dayMonthShort(d) }}</span>
+        @if (dayHasLive(d)) { <span class="livepin"></span> }
+      </button>
+      }
+    </div>
+  </div>
+</nav>
+
+<main>
+  <div class="wrap">
+    @for (d of visibleDates(); track d) {
+    <section class="day" [id]="'day-' + d">
+      <div class="day-h">
+        <h2>{{ dayTitle(d) }}</h2>
+        @if (isLoaded(d)) {
+        <span class="count"
+          >{{ matchesFor(d).length }} {{ matchesFor(d).length === 1 ? 'partido'
+          : 'partidos' }}@if (liveCountFor(d)) { · {{ liveCountFor(d) }} en vivo
+          }</span
+        >
+        }
+      </div>
+
+      <div class="matches">
+        @if (!isLoaded(d)) { @for (s of [1,2,3]; track s) {
+        <div class="skeleton"></div>
+        } } @else { @for (e of matchesFor(d); track e.idEvent) {
+        <article class="match" [class.is-live]="isLive(e)">
+          <div class="m-team home">
+            <span class="name">{{ e.strHomeTeam }}</span>
+            <app-team-badge [url]="e.strHomeTeamBadge" [name]="e.strHomeTeam" />
+          </div>
+
+          <div class="m-center">
+            @if (isLive(e) || isFinal(e) || hasScore(e)) {
+            <div class="m-score" [class.flash]="isFlashing(e.idEvent)">
+              <span>{{ e.intHomeScore ?? '–' }}</span><span class="sep">·</span
+              ><span>{{ e.intAwayScore ?? '–' }}</span>
+            </div>
+            <span
+              class="m-state"
+              [class.live]="isLive(e)"
+              [class.final]="isFinal(e)"
+            >
+              @if (isLive(e)) { <span class="dot"></span> }{{ stateLabel(e) }}
+            </span>
+            } @else {
+            <div class="m-time">{{ kickoffLocal(e) || '--:--' }}</div>
+            <span class="m-state">Por jugar</span>
+            }
+          </div>
+
+          <div class="m-team away">
+            <span class="name">{{ e.strAwayTeam }}</span>
+            <app-team-badge [url]="e.strAwayTeamBadge" [name]="e.strAwayTeam" />
+          </div>
+
+          <div class="m-sub">
+            @if (e.strGroup) { <span class="grp">{{ e.strGroup }}</span> · }
+            <span>{{ stadiumShort(e.strVenue) }}</span>
+          </div>
+        </article>
+        } }
+      </div>
+    </section>
+    } @empty {
+    <div class="empty">No hay partidos para mostrar todavía.</div>
+    }
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot-inner">
+    <span
+      >Datos:
+      <a href="https://www.thesportsdb.com" target="_blank" rel="noopener"
+        >TheSportsDB</a
+      >
+      · marcadores no oficiales.</span
+    >
+    @if (updatedLabel()) {
+    <span>Última actualización: {{ updatedLabel() }}</span> }
+  </div>
+</footer>
