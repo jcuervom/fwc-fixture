@@ -141,7 +141,7 @@
 .stage {
   height: calc(100vh - var(--bar-h));
   height: calc(100dvh - var(--bar-h));
-  min-height: 540px;
+  min-height: 710px;
 }
 .state {
   height: 100%;
@@ -256,7 +256,7 @@ footer a:hover {
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
   .stage {
     height: auto;
     min-height: 0;

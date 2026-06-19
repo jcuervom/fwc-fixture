@@ -1,6 +1,16 @@
 :host {
-  --gap: clamp(16px, 1.7vw, 30px); /* separación entre columnas == ancho del conector */
-  --col: clamp(118px, calc((100vw - 260px) / 9), 168px); /* ancho mínimo de columna */
+  --gap: clamp(
+    12px,
+    1.2vw,
+    24px
+  ); /* separación entre columnas == ancho del conector */
+  --col: clamp(
+    104px,
+    calc((100vw - 390px) / 8),
+    150px
+  ); /* ancho mínimo de columna */
+  --final-col: clamp(176px, 14vw, 220px);
+  --slot-h: 70px;
   --conn: rgba(31, 214, 197, 0.38); /* color de los conectores */
   display: block;
   height: 100%;
@@ -14,8 +24,8 @@
   padding: 8px clamp(10px, 1.4vw, 20px) 16px;
 }
 .inner {
-  min-width: calc(var(--col) * 9 + var(--gap) * 8);
-  min-height: 540px;
+  min-width: calc(var(--col) * 8 + var(--final-col) + var(--gap) * 8);
+  min-height: calc(var(--slot-h) * 8 + 88px);
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -47,7 +57,7 @@
   display: flex;
   gap: var(--gap);
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: calc(var(--slot-h) * 8);
 }
 .round {
   flex: 1 1 0;
@@ -55,18 +65,23 @@
   display: flex;
   flex-direction: column;
 }
+.round.center {
+  flex: 0 0 var(--final-col);
+  min-width: var(--final-col);
+}
 .tie {
   flex: 1 1 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
   position: relative;
-  min-height: 0;
+  min-height: var(--slot-h);
 }
 .round.center .tie {
   justify-content: center;
 }
 .final-tie {
+  width: 100%;
   max-width: 230px;
   margin: 0 auto;
 }
@@ -124,11 +139,34 @@
   width: 210px;
 }
 
+.bracket-scroll app-tie {
+  --tie-min-h: 58px;
+  --tie-pad-y: 5px;
+  --tie-pad-x: 7px;
+  --tie-gap: 1px;
+  --tie-row-gap: 5px;
+  --tie-badge-size: 18px;
+  --tie-name-size: 12px;
+  --tie-score-size: 13px;
+  --tie-status-size: 8px;
+  --tie-status-spacing: 0.07em;
+}
+
+.round.center app-tie {
+  --tie-min-h: 96px;
+  --tie-big-pad-y: 11px;
+  --tie-big-pad-x: 12px;
+  --tie-big-badge-size: 28px;
+  --tie-big-name-size: 16px;
+  --tie-big-score-size: 19px;
+  --tie-big-status-size: 10px;
+}
+
 .mobile-bracket {
   display: none;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
   :host {
     height: auto;
   }

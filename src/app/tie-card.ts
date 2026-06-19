@@ -74,11 +74,12 @@ import { TeamBadge } from './team-badge';
       .card {
         background: var(--ground-2);
         border: 1px solid var(--line);
-        border-radius: 9px;
-        padding: 6px 9px;
+        border-radius: var(--tie-radius, 9px);
+        padding: var(--tie-pad-y, 6px) var(--tie-pad-x, 9px);
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: var(--tie-gap, 2px);
+        min-height: var(--tie-min-h, auto);
         min-width: 0;
         position: relative;
         overflow: hidden;
@@ -96,31 +97,31 @@ import { TeamBadge } from './team-badge';
         opacity: 0.6;
       }
       .card.big {
-        padding: 12px 14px;
-        gap: 5px;
+        padding: var(--tie-big-pad-y, 12px) var(--tie-big-pad-x, 14px);
+        gap: var(--tie-big-gap, 5px);
       }
       .row {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: var(--tie-row-gap, 8px);
         min-width: 0;
-        --sz: 20px;
+        --sz: var(--tie-badge-size, 20px);
       }
       .card.big .row {
-        --sz: 30px;
+        --sz: var(--tie-big-badge-size, 30px);
       }
       .nm {
         flex: 1;
         min-width: 0;
         font-weight: 600;
-        font-size: 13px;
+        font-size: var(--tie-name-size, 13px);
         color: var(--text);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
       .card.big .nm {
-        font-size: 17px;
+        font-size: var(--tie-big-name-size, 17px);
         font-weight: 700;
       }
       .nm.tbd {
@@ -135,13 +136,13 @@ import { TeamBadge } from './team-badge';
       .sc {
         font-family: var(--mono);
         font-weight: 700;
-        font-size: 14px;
+        font-size: var(--tie-score-size, 14px);
         color: var(--text);
         min-width: 12px;
         text-align: right;
       }
       .card.big .sc {
-        font-size: 20px;
+        font-size: var(--tie-big-score-size, 20px);
       }
       .row.win .nm {
         color: var(--text);
@@ -152,8 +153,8 @@ import { TeamBadge } from './team-badge';
       .st {
         margin-top: 2px;
         font-family: var(--mono);
-        font-size: 9px;
-        letter-spacing: 0.1em;
+        font-size: var(--tie-status-size, 9px);
+        letter-spacing: var(--tie-status-spacing, 0.1em);
         text-transform: uppercase;
         color: var(--muted);
         display: flex;
@@ -165,7 +166,7 @@ import { TeamBadge } from './team-badge';
         white-space: nowrap;
       }
       .card.big .st {
-        font-size: 11px;
+        font-size: var(--tie-big-status-size, 11px);
         justify-content: center;
       }
       .st.live {
