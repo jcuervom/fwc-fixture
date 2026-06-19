@@ -15,6 +15,7 @@ const side = (name: string, abbr: string, score: number): Side => ({
   thirdGroups: null,
   projected: false,
   groupSlot: null,
+  playingNow: false,
 });
 
 const placeholder = (name: string, abbr: string): Side => ({
@@ -26,6 +27,7 @@ const placeholder = (name: string, abbr: string): Side => ({
   thirdGroups: null,
   projected: false,
   groupSlot: null,
+  playingNow: false,
 });
 
 const match = (
@@ -62,6 +64,7 @@ const ranked = (
   gd: 0,
   gf: 0,
   played: 2,
+  playingNow: false,
 });
 
 describe('projectLiveStandings', () => {
@@ -78,6 +81,7 @@ describe('projectLiveStandings', () => {
           gd: 1,
           gf: 1,
           played: 1,
+          playingNow: false,
         },
         {
           group: 'C',
@@ -89,6 +93,7 @@ describe('projectLiveStandings', () => {
           gd: 0,
           gf: 1,
           played: 1,
+          playingNow: false,
         },
         {
           group: 'C',
@@ -100,6 +105,7 @@ describe('projectLiveStandings', () => {
           gd: 0,
           gf: 1,
           played: 1,
+          playingNow: false,
         },
         {
           group: 'C',
@@ -111,6 +117,7 @@ describe('projectLiveStandings', () => {
           gd: -1,
           gf: 0,
           played: 1,
+          playingNow: false,
         },
       ],
     };
@@ -127,6 +134,9 @@ describe('projectLiveStandings', () => {
       ['BRA', 1],
       ['HAI', 0],
     ]);
+    expect(
+      live['C'].filter((team) => team.playingNow).map((team) => team.abbr),
+    ).toEqual(['MAR', 'SCO']);
   });
 });
 

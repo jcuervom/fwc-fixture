@@ -2,10 +2,11 @@ import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { WorldCupService } from './worldcup.service';
 import { Bracket } from './bracket';
 import { TieCard } from './tie-card';
+import { TeamBadge } from './team-badge';
 
 @Component({
   selector: 'app-root',
-  imports: [Bracket, TieCard],
+  imports: [Bracket, TeamBadge, TieCard],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })

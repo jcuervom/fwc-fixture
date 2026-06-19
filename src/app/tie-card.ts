@@ -27,7 +27,11 @@ import { TeamBadge } from './team-badge';
             [class.tbd]="m.home.tbd"
             [class.proj]="m.home.projected"
             [attr.title]="sideTooltip(m.home)"
-            >{{ m.home.name }}</span
+          >
+            @if (m.home.playingNow) {
+              <span class="team-live-dot" aria-label="Jugando ahora"></span>
+            }
+            <span class="name-text">{{ m.home.name }}</span></span
           >
           <span class="sc">{{ showScore() ? (m.home.score ?? '') : '' }}</span>
         </div>
@@ -38,7 +42,11 @@ import { TeamBadge } from './team-badge';
             [class.tbd]="m.away.tbd"
             [class.proj]="m.away.projected"
             [attr.title]="sideTooltip(m.away)"
-            >{{ m.away.name }}</span
+          >
+            @if (m.away.playingNow) {
+              <span class="team-live-dot" aria-label="Jugando ahora"></span>
+            }
+            <span class="name-text">{{ m.away.name }}</span></span
           >
           <span class="sc">{{ showScore() ? (m.away.score ?? '') : '' }}</span>
         </div>
@@ -121,6 +129,9 @@ import { TeamBadge } from './team-badge';
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        display: flex;
+        align-items: center;
+        gap: 5px;
       }
       .card.big .nm {
         font-size: var(--tie-big-name-size, 17px);
@@ -134,6 +145,20 @@ import { TeamBadge } from './team-badge';
       .nm.proj {
         color: var(--accent-2);
         border-bottom: 1px dashed rgba(31, 214, 197, 0.55);
+      }
+      .name-text {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .team-live-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 0 0 3px rgba(255, 45, 120, 0.16);
+        flex: none;
       }
       .sc {
         font-family: var(--mono);
@@ -272,7 +297,10 @@ export class TieCard {
   readonly awayWins = computed(() => this.winner() === 'away');
 
   sideTooltip(side: Side): string | null {
-    return side.groupSlot ? `Posición actual: ${side.groupSlot}` : null;
+    const parts = [];
+    if (side.playingNow) parts.push('Jugando ahora');
+    if (side.groupSlot) parts.push(`Posición actual: ${side.groupSlot}`);
+    return parts.length ? parts.join(' · ') : null;
   }
 
   private winner(): 'home' | 'away' | null {

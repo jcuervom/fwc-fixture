@@ -157,6 +157,114 @@
   color: var(--gold);
 }
 
+/* ---------- clasificación de grupos ---------- */
+.groups {
+  border-top: 1px solid var(--line);
+  padding: 36px 0 42px;
+  background: rgba(0, 0, 0, 0.08);
+}
+.groups-title {
+  font-family: var(--disp);
+  font-weight: 900;
+  font-size: clamp(24px, 4vw, 40px);
+  letter-spacing: 0;
+  margin: 0 0 16px;
+}
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 12px;
+}
+.group-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(19, 32, 27, 0.72);
+}
+.group-card h3 {
+  margin: 0;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+}
+.group-card table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.group-card th,
+.group-card td {
+  padding: 7px 8px;
+  border-bottom: 1px solid rgba(242, 239, 230, 0.07);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-align: right;
+  color: var(--muted);
+}
+.group-card th {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.group-card th:nth-child(1),
+.group-card .slot {
+  width: 42px;
+  text-align: left;
+}
+.group-card th:nth-child(2) {
+  width: auto;
+  text-align: left;
+}
+.group-card tbody tr:last-child td {
+  border-bottom: 0;
+}
+.group-card tr.advance .slot {
+  color: var(--accent-2);
+}
+.group-card tr.third .slot {
+  color: var(--gold);
+}
+.group-card tr.playing {
+  background: rgba(255, 45, 120, 0.06);
+}
+.team-cell {
+  text-align: left;
+  --sz: 18px;
+}
+.team-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.team-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 12px;
+  font-weight: 650;
+}
+.table-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255, 45, 120, 0.16);
+  flex: none;
+}
+.points {
+  color: var(--text);
+  font-weight: 700;
+}
+
 /* ---------- listado de todos los partidos ---------- */
 .all {
   border-top: 1px solid var(--line);
@@ -250,6 +358,9 @@ footer a:hover {
   }
   .all {
     padding: 28px 0 56px;
+  }
+  .groups {
+    padding: 28px 0 34px;
   }
   .grid {
     grid-template-columns: 1fr;

@@ -46,6 +46,11 @@ export class WorldCupService {
   readonly hasGroups = computed(
     () => Object.keys(this.liveGroups()).length > 0,
   );
+  readonly groupTables = computed(() =>
+    Object.entries(this.liveGroups())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([letter, teams]) => ({ letter, teams })),
+  );
 
   byRound(round: RoundSlug): Match[] {
     return this.all().filter((m) => m.round === round);

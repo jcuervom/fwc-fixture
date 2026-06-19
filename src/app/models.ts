@@ -77,6 +77,7 @@ export interface Side {
   thirdGroups: string[] | null; // para plazas de "mejor tercero": grupos elegibles
   projected: boolean; // equipo inferido por la clasificación en vivo
   groupSlot: string | null; // posición actual en grupo: "1D", "2L", "3B"
+  playingNow: boolean;
 }
 
 export interface Match {
@@ -102,6 +103,7 @@ export interface RankedTeam {
   gd: number;
   gf: number;
   played: number;
+  playingNow: boolean;
 }
 
 export const ROUND_LABEL: Record<RoundSlug, string> = {
@@ -152,6 +154,7 @@ function buildSide(c: EspnCompetitor | undefined): Side {
     thirdGroups,
     projected: false,
     groupSlot: null,
+    playingNow: false,
   };
 }
 
@@ -210,6 +213,12 @@ export function normalize(e: EspnEvent): Match {
   const home = comps.find((c) => c.homeAway === 'home') || comps[0];
   const away = comps.find((c) => c.homeAway === 'away') || comps[1];
   const { state, detail } = formatStatus(e.status?.type, e.date);
+  const homeSide = buildSide(home);
+  const awaySide = buildSide(away);
+  if (state === 'in') {
+    homeSide.playingNow = true;
+    awaySide.playingNow = true;
+  }
   const v = comp?.venue;
   let venue = '';
   if (v?.fullName)
@@ -222,8 +231,8 @@ export function normalize(e: EspnEvent): Match {
     state,
     live: state === 'in',
     detail,
-    home: buildSide(home),
-    away: buildSide(away),
+    home: homeSide,
+    away: awaySide,
     venue,
   };
 }
@@ -246,6 +255,7 @@ export function parseStandings(d: EspnStandings): Record<string, RankedTeam[]> {
       gd: stat(e, 'pointDifferential'),
       gf: stat(e, 'pointsFor'),
       played: stat(e, 'gamesPlayed'),
+      playingNow: false,
     }));
     teams.sort((a, b) => a.rank - b.rank);
     out[letter] = teams;
@@ -279,6 +289,7 @@ function seedFromRanked(team: RankedTeam, index: number): LiveRankedTeam {
     gf: 0,
     ga: 0,
     played: 0,
+    playingNow: team.playingNow,
     seedRank: team.rank || index + 1,
   };
 }
@@ -295,6 +306,7 @@ function seedFromSide(group: string, side: Side): LiveRankedTeam {
     gf: 0,
     ga: 0,
     played: 0,
+    playingNow: side.playingNow,
     seedRank: Number.MAX_SAFE_INTEGER,
   };
 }
@@ -319,6 +331,7 @@ function rankLiveTeams(teams: LiveRankedTeam[]): RankedTeam[] {
       gd: team.gd,
       gf: team.gf,
       played: team.played,
+      playingNow: team.playingNow,
     }));
 }
 
@@ -392,6 +405,10 @@ export function projectLiveStandings(
 
     const home = ensureTeam(match.group, match.home);
     const away = ensureTeam(match.group, match.away);
+    if (match.state === 'in') {
+      home.playingNow = true;
+      away.playingNow = true;
+    }
     applyResult(home, away, match.home.score, match.away.score);
     if (match.state === 'post')
       finishedGames.set(match.group, (finishedGames.get(match.group) || 0) + 1);
@@ -422,6 +439,7 @@ export function rankedToSide(rt: RankedTeam): Side {
     thirdGroups: null,
     projected: true,
     groupSlot: `${rt.rank}${rt.group}`,
+    playingNow: rt.playingNow,
   };
 }
 

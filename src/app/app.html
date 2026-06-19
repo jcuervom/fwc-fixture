@@ -46,6 +46,57 @@
   }
 </section>
 
+@if (svc.groupTables().length) {
+<section class="groups">
+  <div class="wrap">
+    <h2 class="groups-title">Clasificación de grupos</h2>
+    <div class="groups-grid">
+      @for (g of svc.groupTables(); track g.letter) {
+      <section class="group-card">
+        <h3>Grupo {{ g.letter }}</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Pos</th>
+              <th>Equipo</th>
+              <th>PJ</th>
+              <th>DG</th>
+              <th>GF</th>
+              <th>Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (team of g.teams; track team.abbr) {
+            <tr
+              [class.advance]="team.rank <= 2"
+              [class.third]="team.rank === 3"
+              [class.playing]="team.playingNow"
+            >
+              <td class="slot">{{ team.rank }}{{ g.letter }}</td>
+              <td class="team-cell">
+                <span class="team-wrap">
+                  @if (team.playingNow) {
+                  <span class="table-live-dot" title="Jugando ahora"></span>
+                  }
+                  <app-team-badge [logo]="team.logo" [abbr]="team.abbr" />
+                  <span class="team-name">{{ team.name }}</span>
+                </span>
+              </td>
+              <td>{{ team.played }}</td>
+              <td>{{ team.gd > 0 ? '+' + team.gd : team.gd }}</td>
+              <td>{{ team.gf }}</td>
+              <td class="points">{{ team.points }}</td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+      }
+    </div>
+  </div>
+</section>
+}
+
 <!-- todos los partidos, por día -->
 <main class="all">
   <div class="wrap">
