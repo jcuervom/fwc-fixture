@@ -167,7 +167,7 @@ describe('projectKnockouts', () => {
 
     expect(projected[0].home.name).toBe('United States');
     expect(projected[0].home.abbr).toBe('USA');
-    expect(projected[0].home.projected).toBeTrue();
+    expect(projected[0].home.projected).toBe(true);
     expect(projected[0].home.groupSlot).toBe('1D');
   });
 

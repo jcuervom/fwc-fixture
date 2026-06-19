@@ -70,6 +70,7 @@
             <tr
               [class.advance]="team.rank <= 2"
               [class.third]="team.rank === 3"
+              [class.best-third]="team.bestThird"
               [class.playing]="team.playingNow"
             >
               <td class="slot">{{ team.rank }}{{ g.letter }}</td>
@@ -80,6 +81,11 @@
                   }
                   <app-team-badge [logo]="team.logo" [abbr]="team.abbr" />
                   <span class="team-name">{{ team.name }}</span>
+                  @if (team.bestThird) {
+                  <span class="best-third-tag" title="Mejor tercero clasificado"
+                    >3.º+</span
+                  >
+                  }
                 </span>
               </td>
               <td>{{ team.played }}</td>

@@ -7,6 +7,7 @@ import {
   Match,
   RankedTeam,
   RoundSlug,
+  byMerit,
   dayKey,
   dayTitle,
   espnDateParam,
@@ -46,11 +47,30 @@ export class WorldCupService {
   readonly hasGroups = computed(
     () => Object.keys(this.liveGroups()).length > 0,
   );
-  readonly groupTables = computed(() =>
-    Object.entries(this.liveGroups())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([letter, teams]) => ({ letter, teams })),
+  private readonly bestThirdKeys = computed(
+    () =>
+      new Set(
+        Object.values(this.liveGroups())
+          .map((g) => g.find((t) => t.rank === 3))
+          .filter((t): t is RankedTeam => !!t)
+          .sort(byMerit)
+          .slice(0, 8)
+          .map((t) => `${t.group}:${t.abbr}`),
+      ),
   );
+  readonly groupTables = computed(() => {
+    const bestThirdKeys = this.bestThirdKeys();
+    return Object.entries(this.liveGroups())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([letter, teams]) => ({
+        letter,
+        teams: teams.map((team) => ({
+          ...team,
+          bestThird:
+            team.rank === 3 && bestThirdKeys.has(`${team.group}:${team.abbr}`),
+        })),
+      }));
+  });
 
   byRound(round: RoundSlug): Match[] {
     return this.all().filter((m) => m.round === round);
