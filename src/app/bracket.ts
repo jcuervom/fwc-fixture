@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  ViewChild,
+  inject,
+} from '@angular/core';
 import { WorldCupService } from './worldcup.service';
 import { Match, ROUND_LABEL, RoundSlug } from './models';
 import { TieCard } from './tie-card';
@@ -15,8 +22,10 @@ interface Col {
   templateUrl: './bracket.html',
   styleUrl: './bracket.css',
 })
-export class Bracket {
+export class Bracket implements AfterViewInit {
   private svc = inject(WorldCupService);
+  @ViewChild('bracketScroll')
+  private bracketScroll?: ElementRef<HTMLDivElement>;
 
   // de fuera hacia la final (lado izquierdo)
   readonly leftCols: Col[] = [
@@ -27,14 +36,10 @@ export class Bracket {
   ];
   // lado derecho: de la final hacia fuera
   readonly rightCols: Col[] = [...this.leftCols].reverse();
-  readonly mobileRounds: RoundSlug[] = [
-    'round-of-32',
-    'round-of-16',
-    'quarterfinals',
-    'semifinals',
-    'final',
-    '3rd-place-match',
-  ];
+
+  ngAfterViewInit(): void {
+    this.centerMobileMap();
+  }
 
   label(slug: RoundSlug): string {
     return ROUND_LABEL[slug];
@@ -65,7 +70,15 @@ export class Bracket {
   thirdMatch(): Match | null {
     return this.svc.byRound('3rd-place-match')[0] ?? null;
   }
-  roundMatches(slug: RoundSlug): Match[] {
-    return this.svc.byRound(slug);
+
+  private centerMobileMap(): void {
+    requestAnimationFrame(() => {
+      const el = this.bracketScroll?.nativeElement;
+      if (!el || !window.matchMedia('(max-width: 1200px)').matches) return;
+      el.scrollTo({
+        left: Math.max(0, (el.scrollWidth - el.clientWidth) / 2),
+        top: 0,
+      });
+    });
   }
 }

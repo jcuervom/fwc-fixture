@@ -23,6 +23,9 @@
   scrollbar-gutter: stable both-edges;
   padding: 8px clamp(10px, 1.4vw, 20px) 16px;
 }
+.map-hint {
+  display: none;
+}
 .inner {
   min-width: calc(var(--col) * 8 + var(--final-col) + var(--gap) * 8);
   min-height: calc(var(--slot-h) * 8 + 88px);
@@ -162,67 +165,142 @@
   --tie-big-status-size: 10px;
 }
 
-.mobile-bracket {
-  display: none;
-}
-
 @media (max-width: 1200px) {
   :host {
+    --gap: 9px;
+    --col: 92px;
+    --final-col: 142px;
+    --slot-h: 54px;
     height: auto;
   }
 
   .bracket-scroll {
-    display: none;
-  }
-
-  .mobile-bracket {
-    display: grid;
-    gap: 18px;
-    padding: 16px clamp(14px, 4vw, 24px) 26px;
-  }
-
-  .mobile-round {
+    height: min(72dvh, 620px);
+    min-height: 430px;
+    padding: 10px;
     border-top: 1px solid var(--line);
-    padding-top: 16px;
+    border-bottom: 1px solid var(--line);
+    background:
+      linear-gradient(
+        90deg,
+        rgba(14, 22, 19, 0.96),
+        transparent 26px,
+        transparent calc(100% - 26px),
+        rgba(14, 22, 19, 0.96)
+      ),
+      rgba(0, 0, 0, 0.12);
+    overscroll-behavior: contain;
+    scrollbar-gutter: auto;
+    scrollbar-width: thin;
+    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .mobile-round:first-child {
-    border-top: 0;
-    padding-top: 0;
-  }
-
-  .mobile-round h3 {
-    margin: 0 0 10px;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+  .map-hint {
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 6px;
+    padding: 4px 8px;
+    border: 1px solid rgba(31, 214, 197, 0.24);
+    border-radius: 999px;
+    background: rgba(14, 22, 19, 0.88);
     color: var(--accent-2);
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
   }
 
-  .mobile-round.feature h3 {
-    color: var(--accent);
-    text-align: center;
+  .inner {
+    height: calc(var(--slot-h) * 8 + 72px);
   }
 
-  .mobile-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-    gap: 10px;
+  .labels {
+    padding-bottom: 5px;
   }
 
-  .mobile-round.feature .mobile-grid {
-    max-width: 420px;
-    margin: 0 auto;
+  .labels .lbl {
+    font-size: 7.5px;
+    letter-spacing: 0.1em;
+  }
+
+  .third-wrap {
+    gap: 8px;
+    padding-top: 8px;
+  }
+
+  .third-label {
+    font-size: 7.5px;
+    letter-spacing: 0.1em;
+  }
+
+  .third-card {
+    width: 132px;
+  }
+
+  .bracket-scroll app-tie {
+    --tie-min-h: 44px;
+    --tie-pad-y: 3px;
+    --tie-pad-x: 5px;
+    --tie-gap: 0px;
+    --tie-row-gap: 4px;
+    --tie-badge-size: 14px;
+    --tie-name-size: 9.5px;
+    --tie-score-size: 10px;
+    --tie-status-size: 6.8px;
+    --tie-status-spacing: 0.04em;
+  }
+
+  .round.center app-tie {
+    --tie-min-h: 72px;
+    --tie-big-pad-y: 8px;
+    --tie-big-pad-x: 9px;
+    --tie-big-badge-size: 20px;
+    --tie-big-name-size: 12px;
+    --tie-big-score-size: 15px;
+    --tie-big-status-size: 8px;
   }
 }
 
 @media (max-width: 520px) {
-  .mobile-bracket {
-    gap: 16px;
+  :host {
+    --gap: 8px;
+    --col: 86px;
+    --final-col: 132px;
+    --slot-h: 52px;
   }
 
-  .mobile-grid {
-    gap: 8px;
+  .bracket-scroll {
+    height: 68dvh;
+    min-height: 390px;
+  }
+
+  .bracket-scroll app-tie {
+    --tie-name-size: 9px;
+    --tie-status-size: 6.5px;
+  }
+}
+
+@media (max-width: 360px) {
+  :host {
+    --col: 82px;
+    --final-col: 126px;
+    --slot-h: 50px;
+  }
+
+  .bracket-scroll {
+    min-height: 360px;
+  }
+
+  .map-hint {
+    font-size: 8px;
+    letter-spacing: 0.06em;
   }
 }
