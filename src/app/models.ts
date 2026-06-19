@@ -76,6 +76,7 @@ export interface Side {
   tbd: boolean; // plaza sin equipo confirmado
   thirdGroups: string[] | null; // para plazas de "mejor tercero": grupos elegibles
   projected: boolean; // equipo inferido por la clasificación en vivo
+  groupSlot: string | null; // posición actual en grupo: "1D", "2L", "3B"
 }
 
 export interface Match {
@@ -150,6 +151,7 @@ function buildSide(c: EspnCompetitor | undefined): Side {
     tbd,
     thirdGroups,
     projected: false,
+    groupSlot: null,
   };
 }
 
@@ -419,6 +421,7 @@ export function rankedToSide(rt: RankedTeam): Side {
     tbd: false,
     thirdGroups: null,
     projected: true,
+    groupSlot: `${rt.rank}${rt.group}`,
   };
 }
 

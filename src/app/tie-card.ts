@@ -4,7 +4,7 @@ import {
   computed,
   input,
 } from '@angular/core';
-import { Match } from './models';
+import { Match, Side } from './models';
 import { TeamBadge } from './team-badge';
 
 @Component({
@@ -26,6 +26,7 @@ import { TeamBadge } from './team-badge';
             class="nm"
             [class.tbd]="m.home.tbd"
             [class.proj]="m.home.projected"
+            [attr.title]="sideTooltip(m.home)"
             >{{ m.home.name }}</span
           >
           <span class="sc">{{ showScore() ? (m.home.score ?? '') : '' }}</span>
@@ -36,6 +37,7 @@ import { TeamBadge } from './team-badge';
             class="nm"
             [class.tbd]="m.away.tbd"
             [class.proj]="m.away.projected"
+            [attr.title]="sideTooltip(m.away)"
             >{{ m.away.name }}</span
           >
           <span class="sc">{{ showScore() ? (m.away.score ?? '') : '' }}</span>
@@ -268,6 +270,10 @@ export class TieCard {
   });
   readonly homeWins = computed(() => this.winner() === 'home');
   readonly awayWins = computed(() => this.winner() === 'away');
+
+  sideTooltip(side: Side): string | null {
+    return side.groupSlot ? `Posición actual: ${side.groupSlot}` : null;
+  }
 
   private winner(): 'home' | 'away' | null {
     const m = this.match();

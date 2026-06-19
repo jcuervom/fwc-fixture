@@ -14,6 +14,7 @@ const side = (name: string, abbr: string, score: number): Side => ({
   tbd: false,
   thirdGroups: null,
   projected: false,
+  groupSlot: null,
 });
 
 const placeholder = (name: string, abbr: string): Side => ({
@@ -24,6 +25,7 @@ const placeholder = (name: string, abbr: string): Side => ({
   tbd: true,
   thirdGroups: null,
   projected: false,
+  groupSlot: null,
 });
 
 const match = (
@@ -156,6 +158,7 @@ describe('projectKnockouts', () => {
     expect(projected[0].home.name).toBe('United States');
     expect(projected[0].home.abbr).toBe('USA');
     expect(projected[0].home.projected).toBeTrue();
+    expect(projected[0].home.groupSlot).toBe('1D');
   });
 
   it('can resolve a group slot even when ESPN uses TBD as the abbreviation', () => {
