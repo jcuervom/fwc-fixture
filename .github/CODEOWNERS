@@ -1,0 +1,4 @@
+# Require the repository owner to review every change when branch protection
+# enables "Require review from Code Owners".
+* @jcuervom
+

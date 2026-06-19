@@ -1,0 +1,35 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Madrid
+    open-pull-requests-limit: 5
+    groups:
+      angular:
+        patterns:
+          - "@angular*"
+          - "zone.js"
+      testing:
+        patterns:
+          - "jest*"
+          - "@types/jest"
+          - "@playwright/test"
+      security-overrides:
+        patterns:
+          - "@babel/core"
+          - "esbuild"
+          - "js-yaml"
+          - "piscina"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:15"
+      timezone: Europe/Madrid
+    open-pull-requests-limit: 5
