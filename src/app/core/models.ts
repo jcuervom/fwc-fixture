@@ -266,6 +266,13 @@ export function parseStandings(d: EspnStandings): Record<string, RankedTeam[]> {
 export const byMerit = (a: RankedTeam, b: RankedTeam) =>
   b.points - a.points || b.gd - a.gd || b.gf - a.gf;
 
+/**
+ * Los mejores terceros, ordenados como en la tabla de terceros de la FIFA:
+ * puntos, dif. de goles y goles a favor. La FIFA aplica después la puntuación
+ * disciplinaria y el sorteo; como esos datos no llegan de forma fiable, usamos
+ * la letra del grupo como desempate determinista (evita que el reparto cambie
+ * de forma aleatoria entre refrescos cuando dos terceros van empatados).
+ */
 export function bestThirds(
   groups: Record<string, RankedTeam[]>,
   limit = 8,
@@ -273,7 +280,7 @@ export function bestThirds(
   return Object.values(groups)
     .map((g) => g.find((t) => t.rank === 3))
     .filter((t): t is RankedTeam => !!t)
-    .sort(byMerit)
+    .sort((a, b) => byMerit(a, b) || a.group.localeCompare(b.group))
     .slice(0, limit);
 }
 
@@ -473,19 +480,102 @@ function rankSlotOf(side: Side): { rank: number; group: string } | null {
   return null;
 }
 
+interface ThirdSlot {
+  key: string; // identificador de la plaza dentro del partido ("<id>:home")
+  eligible: string[]; // grupos cuyo tercero puede ocupar la plaza
+}
+
+/**
+ * Reparte los mejores terceros entre las plazas "3.º" del cuadro según el
+ * sistema de combinaciones de la FIFA (Anexo C del reglamento del Mundial 2026).
+ *
+ * Cómo funciona el sistema oficial: cada una de las 8 plazas de tercero tiene
+ * asociado un conjunto FIJO de grupos elegibles (p. ej. el ganador del grupo E
+ * solo puede recibir al tercero de A, B, C, D o F). Esa lista —que ESPN publica
+ * como "Third Place Group A/B/C/..."— nunca incluye el grupo del propio ganador,
+ * de modo que un tercero jamás se reencuentra en octavos con el rival que ya tuvo
+ * en su grupo. Una vez se conocen los 8 (de 12) grupos cuyo tercero se clasifica,
+ * hay que colocar cada tercero en una plaza para la que su grupo sea elegible y
+ * sin repetir grupo.
+ *
+ * Eso es un EMPAREJAMIENTO PERFECTO en un grafo bipartito (plazas ↔ terceros), y
+ * lo resolvemos con caminos aumentantes (algoritmo de Kuhn). La versión anterior
+ * era voraz —cogía "el primer tercero elegible libre"— y eso fallaba de dos
+ * formas según el orden de los partidos: podía dejar una plaza sin ningún tercero
+ * elegible aunque existiera un reparto válido, o colar un tercero en una plaza
+ * para la que no era elegible. El emparejamiento elimina ambos fallos.
+ *
+ * Los terceros entran ya ordenados por mérito (ver bestThirds), así que el
+ * resultado es determinista. Con datos parciales (a mitad de torneo, sin los 8
+ * grupos aún definidos) alguna plaza puede quedar sin tercero elegible; en ese
+ * caso se rellena con el mejor tercero libre para no dejar el cuadro vacío.
+ */
+export function assignThirdSlots(
+  slots: ThirdSlot[],
+  thirds: RankedTeam[],
+): Map<string, RankedTeam> {
+  // Solo hay un tercero por grupo: índice (en orden de mérito) según su grupo.
+  const thirdOfGroup = new Map<string, number>();
+  thirds.forEach((t, i) => {
+    if (!thirdOfGroup.has(t.group)) thirdOfGroup.set(t.group, i);
+  });
+
+  // Adyacencia: por cada plaza, los terceros elegibles (en orden de mérito).
+  const candidates: number[][] = slots.map((slot) =>
+    slot.eligible
+      .map((g) => thirdOfGroup.get(g))
+      .filter((i): i is number => i !== undefined),
+  );
+
+  // Kuhn: slotOfThird[t] = índice de la plaza que se queda con el tercero t.
+  const slotOfThird = new Array<number>(thirds.length).fill(-1);
+  const augment = (slot: number, seen: boolean[]): boolean => {
+    for (const t of candidates[slot]) {
+      if (seen[t]) continue;
+      seen[t] = true;
+      if (slotOfThird[t] === -1 || augment(slotOfThird[t], seen)) {
+        slotOfThird[t] = slot;
+        return true;
+      }
+    }
+    return false;
+  };
+  for (let s = 0; s < slots.length; s++) {
+    augment(s, new Array<boolean>(thirds.length).fill(false));
+  }
+
+  const out = new Map<string, RankedTeam>();
+  const usedThird = new Set<number>();
+  slotOfThird.forEach((slot, t) => {
+    if (slot !== -1) {
+      out.set(slots[slot].key, thirds[t]);
+      usedThird.add(t);
+    }
+  });
+
+  // Relleno voraz solo para plazas que el emparejamiento no pudo cubrir.
+  for (const slot of slots) {
+    if (out.has(slot.key)) continue;
+    const free = thirds.findIndex((_, i) => !usedThird.has(i));
+    if (free === -1) break;
+    usedThird.add(free);
+    out.set(slot.key, thirds[free]);
+  }
+
+  return out;
+}
+
 export function projectKnockouts(
   list: Match[],
   groups: Record<string, RankedTeam[]>,
 ): Match[] {
   if (!Object.keys(groups).length) return list;
 
-  // 8 mejores terceros (por puntos, dif. y goles a favor)
+  // Los 8 mejores terceros, en orden de mérito.
   const thirds = bestThirds(groups);
 
-  // asignación voraz de terceros a las plazas "3RD", respetando los grupos elegibles
-  const thirdSlot = new Map<string, RankedTeam>();
-  const used = new Set<string>();
-  const slots: { key: string; eligible: string[] }[] = [];
+  // Plazas "3.º" del cuadro, en orden de partido, con sus grupos elegibles.
+  const slots: ThirdSlot[] = [];
   for (const m of list) {
     if (m.round === 'group-stage') continue;
     for (const ha of ['home', 'away'] as const) {
@@ -494,16 +584,9 @@ export function projectKnockouts(
         slots.push({ key: `${m.id}:${ha}`, eligible: s.thirdGroups });
     }
   }
-  for (const slot of slots) {
-    const pick =
-      thirds.find(
-        (t) => !used.has(t.group) && slot.eligible.includes(t.group),
-      ) || thirds.find((t) => !used.has(t.group));
-    if (pick) {
-      used.add(pick.group);
-      thirdSlot.set(slot.key, pick);
-    }
-  }
+
+  // Reparto según el sistema de combinaciones de la FIFA (emparejamiento perfecto).
+  const thirdSlot = assignThirdSlots(slots, thirds);
 
   const resolve = (s: Side, key: string): Side => {
     if (!s.tbd) return s;

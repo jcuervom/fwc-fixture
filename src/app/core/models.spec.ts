@@ -306,6 +306,85 @@ describe('projectKnockouts', () => {
     expect(projected[0].away.abbr).toBe('A3');
     expect(projected[0].away.groupSlot).toBe('3A');
   });
+
+  it('assigns thirds with a perfect matching, never into an ineligible slot', () => {
+    // A3 es el mejor tercero y B3 el peor. La plaza ABIERTA (grupos {A,B})
+    // aparece en el calendario ANTES que la plaza RESTRINGIDA (solo {A}).
+    // El reparto voraz pondría A3 en la primera plaza y dejaría la segunda
+    // sin tercero elegible, colando a B3 en una plaza que no lo admite. El
+    // emparejamiento perfecto da a la plaza restringida su único tercero (A3)
+    // y deja B3 para la abierta.
+    const groups: Record<string, RankedTeam[]> = {
+      A: [ranked('A', 1, 'A1', 'A1', 9), ranked('A', 3, 'A3', 'A3', 5)],
+      B: [ranked('B', 1, 'B1', 'B1', 9), ranked('B', 3, 'B3', 'B3', 3)],
+    };
+    const fixture: Match[] = [
+      {
+        id: 'open-slot',
+        dateUTC: '2026-06-29T20:00Z',
+        round: 'round-of-32',
+        group: null,
+        state: 'pre',
+        live: false,
+        detail: '22:00',
+        home: placeholder('Grupo G Gana', '1G'),
+        away: { ...placeholder('Mejor 3.º', '3RD'), thirdGroups: ['A', 'B'] },
+        venue: '',
+      },
+      {
+        id: 'tight-slot',
+        dateUTC: '2026-06-29T23:00Z',
+        round: 'round-of-32',
+        group: null,
+        state: 'pre',
+        live: false,
+        detail: '01:00',
+        home: { ...placeholder('Mejor 3.º', '3RD'), thirdGroups: ['A'] },
+        away: placeholder('Grupo H Gana', '1H'),
+        venue: '',
+      },
+    ];
+
+    const projected = projectKnockouts(fixture, groups);
+
+    expect(projected[1].home.groupSlot).toBe('3A');
+    expect(projected[0].away.groupSlot).toBe('3B');
+  });
+
+  it('never reuses a group across third-place slots', () => {
+    const groups: Record<string, RankedTeam[]> = {
+      A: [ranked('A', 1, 'A1', 'A1', 9), ranked('A', 3, 'A3', 'A3', 5)],
+      B: [ranked('B', 1, 'B1', 'B1', 9), ranked('B', 3, 'B3', 'B3', 4)],
+      C: [ranked('C', 1, 'C1', 'C1', 9), ranked('C', 3, 'C3', 'C3', 3)],
+    };
+    const slot = (id: string, eligible: string[]): Match => ({
+      id,
+      dateUTC: '2026-06-29T20:00Z',
+      round: 'round-of-32',
+      group: null,
+      state: 'pre',
+      live: false,
+      detail: '22:00',
+      home: placeholder('Ganador', '1X'),
+      away: { ...placeholder('Mejor 3.º', '3RD'), thirdGroups: eligible },
+      venue: '',
+    });
+    const fixture = [
+      slot('s1', ['A', 'B', 'C']),
+      slot('s2', ['A', 'B', 'C']),
+      slot('s3', ['A', 'B', 'C']),
+    ];
+
+    const projected = projectKnockouts(fixture, groups);
+    const assigned = projected.map((m) => m.away.groupSlot);
+
+    expect(new Set(assigned).size).toBe(3); // sin grupos repetidos
+    expect([...assigned].sort((a, b) => String(a).localeCompare(String(b)))).toEqual([
+      '3A',
+      '3B',
+      '3C',
+    ]);
+  });
 });
 
 describe('bestThirds', () => {
