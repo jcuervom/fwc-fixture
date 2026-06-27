@@ -18,6 +18,10 @@ import { TeamBadge } from '../team-badge/team-badge';
       [class.live]="m?.live"
       [class.empty]="!m"
       [class.big]="big()"
+      [class.final-card]="final()"
+      [class.compact]="compact()"
+      [class.proj]="projected()"
+      [class.done]="!!m && m.state === 'post'"
     >
       @if (m) {
         <div class="row" [class.win]="homeWins()">
@@ -31,7 +35,9 @@ import { TeamBadge } from '../team-badge/team-badge';
             @if (m.home.playingNow) {
               <span class="team-live-dot" aria-label="Jugando ahora"></span>
             }
-            <span class="name-text">{{ m.home.name }}</span></span
+            <span class="name-text" [attr.title]="m.home.name">{{
+              nameOf(m.home)
+            }}</span></span
           >
           <span class="sc">{{ showScore() ? (m.home.score ?? '') : '' }}</span>
         </div>
@@ -46,7 +52,9 @@ import { TeamBadge } from '../team-badge/team-badge';
             @if (m.away.playingNow) {
               <span class="team-live-dot" aria-label="Jugando ahora"></span>
             }
-            <span class="name-text">{{ m.away.name }}</span></span
+            <span class="name-text" [attr.title]="m.away.name">{{
+              nameOf(m.away)
+            }}</span></span
           >
           <span class="sc">{{ showScore() ? (m.away.score ?? '') : '' }}</span>
         </div>
@@ -83,7 +91,7 @@ import { TeamBadge } from '../team-badge/team-badge';
       }
       .card {
         background: var(--ground-2);
-        border: 1px solid var(--line);
+        border: 1px solid var(--line-strong);
         border-radius: var(--tie-radius, 9px);
         padding: var(--tie-pad-y, 6px) var(--tie-pad-x, 9px);
         display: flex;
@@ -93,22 +101,108 @@ import { TeamBadge } from '../team-badge/team-badge';
         min-width: 0;
         position: relative;
         overflow: hidden;
+        box-shadow: var(--elev-1);
+        transition:
+          border-color 0.15s ease,
+          background 0.15s ease,
+          box-shadow 0.15s ease,
+          transform 0.15s ease;
       }
-      .card.live {
-        border-color: rgba(255, 45, 120, 0.55);
+      .card:not(.empty):hover {
+        border-color: var(--accent-2);
+        background: var(--ground-3);
+      }
+      /* partido decidido en el listado: filo dorado de "resuelto" */
+      .card.done:not(.big):not(.compact) {
+        box-shadow: var(--elev-1), inset 2px 0 0 rgba(233, 196, 106, 0.4);
+      }
+      /* proyectado: tinte turquesa frío, un escalón por debajo de lo decidido */
+      .card.proj:not(.live) {
         background: linear-gradient(
           180deg,
-          rgba(255, 45, 120, 0.07),
+          rgba(31, 214, 197, 0.045),
           var(--ground-2)
         );
       }
+      .card.live {
+        border-color: rgba(255, 45, 120, 0.65);
+        background: linear-gradient(
+          180deg,
+          rgba(255, 45, 120, 0.09),
+          var(--ground-2)
+        );
+        box-shadow:
+          var(--elev-1),
+          0 0 0 1px rgba(255, 45, 120, 0.3),
+          0 0 22px -6px rgba(255, 45, 120, 0.3);
+        animation: liveBreath 2.6s ease-in-out infinite;
+      }
+      .card.live:hover {
+        border-color: rgba(255, 45, 120, 0.85);
+        background: linear-gradient(
+          180deg,
+          rgba(255, 45, 120, 0.12),
+          var(--ground-2)
+        );
+      }
+      @keyframes liveBreath {
+        0%,
+        100% {
+          box-shadow:
+            var(--elev-1),
+            0 0 0 1px rgba(255, 45, 120, 0.28),
+            0 0 14px -8px rgba(255, 45, 120, 0.2);
+        }
+        50% {
+          box-shadow:
+            var(--elev-1),
+            0 0 0 1px rgba(255, 45, 120, 0.48),
+            0 0 28px -4px rgba(255, 45, 120, 0.4);
+        }
+      }
       .card.empty {
         border-style: dashed;
-        opacity: 0.6;
+        opacity: 0.55;
+        box-shadow: none;
+      }
+      .card.empty:hover {
+        border-color: var(--line-strong);
+        background: var(--ground-2);
       }
       .card.big {
         padding: var(--tie-big-pad-y, 12px) var(--tie-big-pad-x, 14px);
         gap: var(--tie-big-gap, 5px);
+      }
+      /* La FINAL: la tarjeta-destino del cuadro, en oro y con elevación real. */
+      .card.final-card {
+        background: linear-gradient(
+          180deg,
+          rgba(233, 196, 106, 0.13),
+          var(--ground-3) 58%
+        );
+        border-color: rgba(233, 196, 106, 0.55);
+        box-shadow:
+          0 0 0 1px rgba(233, 196, 106, 0.12),
+          0 16px 42px -12px rgba(0, 0, 0, 0.72),
+          0 0 54px -8px rgba(233, 196, 106, 0.22);
+      }
+      .card.final-card:hover {
+        border-color: rgba(233, 196, 106, 0.78);
+        background: linear-gradient(
+          180deg,
+          rgba(233, 196, 106, 0.17),
+          var(--ground-3) 58%
+        );
+      }
+      .card.final-card .sc {
+        color: var(--gold);
+      }
+      .card.final-card .row.win .sc {
+        color: var(--gold);
+        text-shadow: 0 0 14px rgba(233, 196, 106, 0.5);
+      }
+      .card.final-card .row.win .nm {
+        text-shadow: 0 0 16px rgba(233, 196, 106, 0.28);
       }
       .row {
         display: flex;
@@ -152,6 +246,17 @@ import { TeamBadge } from '../team-badge/team-badge';
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+      /* En el cuadro los nombres son cortos; si aún no caben, 2 líneas en vez
+         de recortar con puntos suspensivos (que parece un dato roto). */
+      .card.compact .name-text {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.05;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        text-overflow: clip;
+      }
       .team-live-dot {
         width: 6px;
         height: 6px;
@@ -159,11 +264,22 @@ import { TeamBadge } from '../team-badge/team-badge';
         background: var(--accent);
         box-shadow: 0 0 0 3px rgba(255, 45, 120, 0.16);
         flex: none;
+        position: relative;
+      }
+      .team-live-dot::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: 50%;
+        border: 2px solid var(--accent);
+        opacity: 0.6;
+        animation: ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
       }
       .sc {
         font-family: var(--mono);
         font-weight: 700;
         font-size: var(--tie-score-size, 14px);
+        font-variant-numeric: tabular-nums lining-nums;
         color: var(--text);
         min-width: 12px;
         text-align: right;
@@ -176,6 +292,7 @@ import { TeamBadge } from '../team-badge/team-badge';
       }
       .row.win .sc {
         color: var(--accent-2);
+        letter-spacing: 0.01em;
       }
       .st {
         margin-top: 2px;
@@ -284,6 +401,15 @@ import { TeamBadge } from '../team-badge/team-badge';
 export class TieCard {
   readonly match = input<Match | null>(null);
   readonly big = input(false);
+  /** Tarjeta de la final: tratamiento dorado de campeón. */
+  readonly final = input(false);
+  /** Contexto estrecho (cuadro): usa nombre corto y permite 2 líneas. */
+  readonly compact = input(false);
+
+  /** Nombre a mostrar: corto en el cuadro, completo en los listados. */
+  nameOf(side: Side): string {
+    return this.compact() ? side.short || side.name : side.name;
+  }
 
   readonly showScore = computed(() => {
     const m = this.match();

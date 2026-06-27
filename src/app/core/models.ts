@@ -70,6 +70,7 @@ export type RoundSlug =
 
 export interface Side {
   name: string;
+  short?: string; // nombre corto para contextos estrechos (bracket): "USA", "Marruecos"
   abbr: string; // sigla de equipo o código de plaza ("1C", "2A", "3RD"…)
   logo: string | null;
   score: number | null;
@@ -97,6 +98,7 @@ export interface RankedTeam {
   group: string;
   rank: number;
   name: string;
+  short?: string;
   abbr: string;
   logo: string | null;
   points: number;
@@ -134,6 +136,7 @@ function buildSide(c: EspnCompetitor | undefined): Side {
   const t = c?.team || {};
   const logo = logoOf(t);
   const rawName = t.displayName || t.shortDisplayName || 'Por definir';
+  const rawShort = t.shortDisplayName || t.displayName || rawName;
   const score = c?.score != null && c.score !== '' ? Number(c.score) : null;
   const tbd = !logo && PLACEHOLDER_RE.test(rawName);
   let thirdGroups: string[] | null = null;
@@ -145,8 +148,10 @@ function buildSide(c: EspnCompetitor | undefined): Side {
         .map((s) => s.trim())
         .filter(Boolean);
   }
+  const name = tbd ? translatePlaceholder(rawName) : rawName;
   return {
-    name: tbd ? translatePlaceholder(rawName) : rawName,
+    name,
+    short: tbd ? name : rawShort,
     abbr: t.abbreviation || '—',
     logo,
     score,
@@ -249,6 +254,7 @@ export function parseStandings(d: EspnStandings): Record<string, RankedTeam[]> {
       group: letter,
       rank: stat(e, 'rank'),
       name: e.team?.displayName || e.team?.shortDisplayName || '',
+      short: e.team?.shortDisplayName || e.team?.displayName || '',
       abbr: e.team?.abbreviation || '—',
       logo: e.team ? logoOf(e.team) : null,
       points: stat(e, 'points'),
@@ -300,6 +306,7 @@ function seedFromRanked(team: RankedTeam, index: number): LiveRankedTeam {
     group: team.group,
     rank: team.rank,
     name: team.name,
+    short: team.short,
     abbr: team.abbr,
     logo: team.logo,
     points: 0,
@@ -317,6 +324,7 @@ function seedFromSide(group: string, side: Side): LiveRankedTeam {
     group,
     rank: Number.MAX_SAFE_INTEGER,
     name: side.name,
+    short: side.short,
     abbr: side.abbr,
     logo: side.logo,
     points: 0,
@@ -343,6 +351,7 @@ function rankLiveTeams(teams: LiveRankedTeam[]): RankedTeam[] {
       group: team.group,
       rank: index + 1,
       name: team.name,
+      short: team.short,
       abbr: team.abbr,
       logo: team.logo,
       points: team.points,
@@ -450,6 +459,7 @@ export function projectLiveStandings(
 export function rankedToSide(rt: RankedTeam): Side {
   return {
     name: rt.name,
+    short: rt.short || rt.name,
     abbr: rt.abbr,
     logo: rt.logo,
     score: null,

@@ -51,6 +51,11 @@
   <section class="groups">
     <div class="wrap">
       <h2 class="groups-title">Clasificación de grupos</h2>
+      <ul class="groups-legend" aria-hidden="true">
+        <li><span class="sw adv"></span>Clasifica</li>
+        <li><span class="sw best"></span>Mejor 3.º</li>
+        <li><span class="sw live"></span>En juego</li>
+      </ul>
       <div class="groups-grid">
         @for (g of svc.groupTables(); track g.letter) {
           <section class="group-card">
@@ -63,7 +68,7 @@
                   <th>PJ</th>
                   <th>DG</th>
                   <th>GF</th>
-                  <th>Pts</th>
+                  <th class="pts">Pts</th>
                 </tr>
               </thead>
               <tbody>
@@ -95,7 +100,13 @@
                       </span>
                     </td>
                     <td>{{ team.played }}</td>
-                    <td>{{ team.gd > 0 ? "+" + team.gd : team.gd }}</td>
+                    <td
+                      class="dg"
+                      [class.pos]="team.gd > 0"
+                      [class.neg]="team.gd < 0"
+                    >
+                      {{ team.gd > 0 ? "+" + team.gd : team.gd }}
+                    </td>
                     <td>{{ team.gf }}</td>
                     <td class="points">{{ team.points }}</td>
                   </tr>

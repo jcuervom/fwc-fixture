@@ -26,6 +26,12 @@
 .map-hint {
   display: none;
 }
+.hint-ico {
+  font-weight: 700;
+  font-size: 1.1em;
+  line-height: 0;
+  transform: translateY(1px);
+}
 .inner {
   min-width: calc(var(--col) * 8 + var(--final-col) + var(--gap) * 8);
   min-height: calc(var(--slot-h) * 8 + 88px);
@@ -51,8 +57,15 @@
   text-transform: uppercase;
   color: var(--muted);
 }
+.labels .lbl:not(.center) {
+  opacity: 0.85;
+}
 .labels .lbl.center {
-  color: var(--accent);
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-shadow: 0 0 16px rgba(233, 196, 106, 0.35);
 }
 
 /* el árbol */
@@ -71,6 +84,22 @@
 .round.center {
   flex: 0 0 var(--final-col);
   min-width: var(--final-col);
+  position: relative;
+}
+/* El vacío central deja de ser un hueco negro: un foco cálido lo convierte
+   en el escenario donde aterriza la final. Decorativo, detrás de la tarjeta. */
+.round.center::before {
+  content: "";
+  position: absolute;
+  inset: -8% -20%;
+  z-index: 0;
+  background: radial-gradient(
+    60% 42% at 50% 47%,
+    rgba(233, 196, 106, 0.1),
+    rgba(233, 196, 106, 0.035) 46%,
+    transparent 72%
+  );
+  pointer-events: none;
 }
 .tie {
   flex: 1 1 0;
@@ -80,13 +109,84 @@
   position: relative;
   min-height: var(--slot-h);
 }
-.round.center .tie {
+.final-stack {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
 }
 .final-tie {
+  position: relative;
+  flex: none;
   width: 100%;
   max-width: 230px;
   margin: 0 auto;
+}
+
+/* trofeo + eyebrow, flotando sobre la tarjeta sin alterar el flujo (los
+   conectores siguen apuntando al centro real de la tarjeta) */
+.final-eyebrow {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  color: var(--gold);
+  pointer-events: none;
+}
+.final-eyebrow .trophy {
+  filter: drop-shadow(0 0 14px rgba(233, 196, 106, 0.45));
+}
+.final-eyebrow .ev {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* el premio: aparece bajo la final cuando hay campeón */
+.champion {
+  position: absolute;
+  top: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  padding: 6px 13px 6px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(233, 196, 106, 0.45);
+  background: linear-gradient(
+    90deg,
+    rgba(233, 196, 106, 0.18),
+    rgba(233, 196, 106, 0.06)
+  );
+  box-shadow:
+    0 0 0 4px rgba(233, 196, 106, 0.07),
+    0 10px 26px -12px rgba(0, 0, 0, 0.7);
+  --sz: 20px;
+}
+.champion .champ-name {
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+}
+.champion .champ-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
 }
 
 /* ---- conectores ----
@@ -122,6 +222,25 @@
   height: 0;
   border: 0;
 } /* semifinal → final: solo brazo */
+/* el último tramo se calienta hacia el oro al acercarse a la final */
+.conn.left.straight::after {
+  height: 3px;
+  transform: translateY(-1.5px);
+  background: linear-gradient(
+    90deg,
+    rgba(31, 214, 197, 0.5),
+    rgba(233, 196, 106, 0.62)
+  );
+}
+.conn.right.straight::after {
+  height: 3px;
+  transform: translateY(-1.5px);
+  background: linear-gradient(
+    270deg,
+    rgba(31, 214, 197, 0.5),
+    rgba(233, 196, 106, 0.62)
+  );
+}
 
 .third-wrap {
   flex: none;
@@ -136,10 +255,14 @@
   font-size: 10px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--bronze);
 }
 .third-card {
   width: 210px;
+  border-radius: 11px;
+  box-shadow:
+    0 0 0 1px rgba(200, 155, 90, 0.4),
+    0 0 30px -12px rgba(200, 155, 90, 0.32);
 }
 
 .bracket-scroll app-tie {
@@ -150,7 +273,7 @@
   --tie-row-gap: 5px;
   --tie-badge-size: 18px;
   --tie-name-size: 12px;
-  --tie-score-size: 13px;
+  --tie-score-size: 14px;
   --tie-status-size: 8px;
   --tie-status-spacing: 0.07em;
 }
@@ -168,9 +291,9 @@
 @media (max-width: 1200px) {
   :host {
     --gap: 9px;
-    --col: 92px;
-    --final-col: 142px;
-    --slot-h: 54px;
+    --col: 106px;
+    --final-col: 150px;
+    --slot-h: 56px;
     height: auto;
   }
 
@@ -183,17 +306,43 @@
     background:
       linear-gradient(
         90deg,
-        rgba(14, 22, 19, 0.96),
-        transparent 26px,
-        transparent calc(100% - 26px),
-        rgba(14, 22, 19, 0.96)
+        rgba(14, 22, 19, 0.97),
+        transparent clamp(28px, 9vw, 46px),
+        transparent calc(100% - clamp(28px, 9vw, 46px)),
+        rgba(14, 22, 19, 0.97)
       ),
       rgba(0, 0, 0, 0.12);
     overscroll-behavior: contain;
     scrollbar-gutter: auto;
     scrollbar-width: thin;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 14px;
     touch-action: pan-x pan-y;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .round {
+    scroll-snap-align: center;
+  }
+
+  .final-eyebrow .trophy {
+    width: 20px;
+    height: 20px;
+  }
+  .final-eyebrow .ev {
+    font-size: 8px;
+    letter-spacing: 0.16em;
+  }
+  .champion {
+    padding: 4px 9px 4px 6px;
+    gap: 6px;
+    --sz: 16px;
+  }
+  .champion .champ-name {
+    font-size: 11px;
+  }
+  .champion .champ-tag {
+    font-size: 8px;
   }
 
   .map-hint {
@@ -253,8 +402,8 @@
     --tie-row-gap: 4px;
     --tie-badge-size: 14px;
     --tie-name-size: 9.5px;
-    --tie-score-size: 10px;
-    --tie-status-size: 6.8px;
+    --tie-score-size: 11px;
+    --tie-status-size: 8px;
     --tie-status-spacing: 0.04em;
   }
 
@@ -272,9 +421,9 @@
 @media (max-width: 520px) {
   :host {
     --gap: 8px;
-    --col: 86px;
-    --final-col: 132px;
-    --slot-h: 52px;
+    --col: 98px;
+    --final-col: 140px;
+    --slot-h: 54px;
   }
 
   .bracket-scroll {
@@ -284,15 +433,15 @@
 
   .bracket-scroll app-tie {
     --tie-name-size: 9px;
-    --tie-status-size: 6.5px;
+    --tie-status-size: 7.5px;
   }
 }
 
 @media (max-width: 360px) {
   :host {
-    --col: 82px;
-    --final-col: 126px;
-    --slot-h: 50px;
+    --col: 92px;
+    --final-col: 132px;
+    --slot-h: 52px;
   }
 
   .bracket-scroll {

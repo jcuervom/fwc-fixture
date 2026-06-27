@@ -3,7 +3,7 @@
   #bracketScroll
   aria-label="Cuadro completo desplazable"
 >
-  <div class="map-hint">Cuadro completo · arrastra para explorar</div>
+  <div class="map-hint"><span class="hint-ico" aria-hidden="true">⇄</span> Arrastra para explorar el cuadro</div>
   <div class="inner">
     <!-- fila de etiquetas, alineada con las columnas -->
     <div class="labels">
@@ -25,16 +25,34 @@
           @if ($even) {
           <span class="conn left" [class.straight]="isSingle(c.count)"></span>
           }
-          <app-tie [match]="tie" />
+          <app-tie [match]="tie" [compact]="true" />
         </div>
         }
       </div>
       }
 
-      <!-- columna central: final -->
+      <!-- columna central: final + podio de campeón -->
       <div class="round center">
-        <div class="tie final-tie">
-          <app-tie [match]="finalMatch()" [big]="true" />
+        <div class="final-stack">
+          <div class="tie final-tie">
+            <div class="final-eyebrow" aria-hidden="true">
+              <svg class="trophy" viewBox="0 0 24 24" width="26" height="26">
+                <path
+                  fill="currentColor"
+                  d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94.63 1.5 1.98 2.63 3.61 2.96V19H7v2h10v-2h-4v-3.1c1.63-.33 2.98-1.46 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 8V7h2v3.82C5.84 10.4 5 9.3 5 8zm14 0c0 1.3-.84 2.4-2 2.82V7h2v1z"
+                />
+              </svg>
+              <span class="ev">Gran Final</span>
+            </div>
+            <app-tie [match]="finalMatch()" [big]="true" [final]="true" />
+            @if (champion(); as ch) {
+            <div class="champion" title="Campeón del Mundial">
+              <app-team-badge [logo]="ch.logo" [abbr]="ch.abbr" />
+              <span class="champ-name">{{ ch.short || ch.name }}</span>
+              <span class="champ-tag">Campeón</span>
+            </div>
+            }
+          </div>
         </div>
       </div>
 
@@ -46,7 +64,7 @@
           @if ($even) {
           <span class="conn right" [class.straight]="isSingle(c.count)"></span>
           }
-          <app-tie [match]="tie" />
+          <app-tie [match]="tie" [compact]="true" />
         </div>
         }
       </div>
@@ -56,7 +74,7 @@
     <!-- tercer puesto, fuera del árbol -->
     <div class="third-wrap">
       <div class="third-label">Tercer puesto</div>
-      <div class="third-card"><app-tie [match]="thirdMatch()" /></div>
+      <div class="third-card"><app-tie [match]="thirdMatch()" [compact]="true" /></div>
     </div>
   </div>
 </div>

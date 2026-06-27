@@ -6,9 +6,10 @@ import {
   ViewChild,
   inject,
 } from '@angular/core';
-import { Match, ROUND_LABEL, RoundSlug } from '../../core/models';
+import { Match, ROUND_LABEL, RoundSlug, Side } from '../../core/models';
 import { WorldCupService } from '../../core/worldcup.service';
 import { TieCard } from '../../shared/tie-card/tie-card';
+import { TeamBadge } from '../../shared/team-badge/team-badge';
 
 interface Col {
   slug: RoundSlug;
@@ -18,7 +19,7 @@ interface Col {
 @Component({
   selector: 'app-bracket',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TieCard],
+  imports: [TieCard, TeamBadge],
   templateUrl: './bracket.html',
   styleUrl: './bracket.css',
 })
@@ -71,14 +72,41 @@ export class Bracket implements AfterViewInit {
     return this.svc.byRound('3rd-place-match')[0] ?? null;
   }
 
+  /** Campeón: el lado ganador de la final ya disputada (si lo hay). */
+  champion(): Side | null {
+    const m = this.finalMatch();
+    if (!m || m.state !== 'post' || m.home.score == null || m.away.score == null)
+      return null;
+    if (m.home.score > m.away.score) return m.home;
+    if (m.away.score > m.home.score) return m.away;
+    return null;
+  }
+
+  /**
+   * En pantallas estrechas el cuadro se desplaza en horizontal. En vez de
+   * aterrizar en el centro geométrico (la final, a menudo aún sin equipos),
+   * llevamos al usuario a algo informativo: un partido en vivo si lo hay; si
+   * no, el primer cruce real del borde izquierdo.
+   */
   private centerMobileMap(): void {
     requestAnimationFrame(() => {
       const el = this.bracketScroll?.nativeElement;
-      if (!el || !window.matchMedia('(max-width: 1200px)').matches) return;
-      el.scrollTo({
-        left: Math.max(0, (el.scrollWidth - el.clientWidth) / 2),
-        top: 0,
-      });
+      if (!el || !globalThis.matchMedia('(max-width: 1200px)').matches) return;
+      const target =
+        el.querySelector<HTMLElement>('.card.live') ??
+        el.querySelector<HTMLElement>('.round.left .card:not(.empty)');
+      if (target) {
+        const cardRect = target.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const left =
+          el.scrollLeft +
+          (cardRect.left - elRect.left) -
+          el.clientWidth / 2 +
+          cardRect.width / 2;
+        el.scrollTo({ left: Math.max(0, left), top: 0 });
+      } else {
+        el.scrollTo({ left: 0, top: 0 });
+      }
     });
   }
 }
