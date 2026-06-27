@@ -385,6 +385,51 @@ describe('projectKnockouts', () => {
       '3C',
     ]);
   });
+
+  it('no reproyecta un tercero que el feed ya colocó (sin duplicados en cuadros parciales)', () => {
+    // ECU (3.º A) es el mejor tercero; el feed YA lo colocó en una plaza resuelta.
+    // La plaza de 3.º aún pendiente admite {A, B}. El reparto no debe volver a
+    // colocar a ECU: debe caer SEN (3.º B), y ECU debe aparecer una sola vez.
+    const groups: Record<string, RankedTeam[]> = {
+      A: [ranked('A', 1, 'A1', 'A1', 9), ranked('A', 3, 'Ecuador', 'ECU', 6)],
+      B: [ranked('B', 1, 'B1', 'B1', 9), ranked('B', 3, 'Senegal', 'SEN', 3)],
+    };
+    const fixture: Match[] = [
+      {
+        id: 'resuelta',
+        dateUTC: '2026-06-29T20:00Z',
+        round: 'round-of-32',
+        group: null,
+        state: 'pre',
+        live: false,
+        detail: '22:00',
+        home: side('Ecuador', 'ECU', 0), // tercero ya situado por el feed
+        away: placeholder('Grupo A Gana', '1A'),
+        venue: '',
+      },
+      {
+        id: 'abierta',
+        dateUTC: '2026-06-29T23:00Z',
+        round: 'round-of-32',
+        group: null,
+        state: 'pre',
+        live: false,
+        detail: '01:00',
+        home: placeholder('Grupo B Gana', '1B'),
+        away: { ...placeholder('Mejor 3.º', '3RD'), thirdGroups: ['A', 'B'] },
+        venue: '',
+      },
+    ];
+
+    const projected = projectKnockouts(fixture, groups);
+    const open = projected.find((m) => m.id === 'abierta');
+
+    expect(open?.away.groupSlot).toBe('3B'); // SEN, no el ya colocado ECU(3A)
+    const ecuCount = projected
+      .flatMap((m) => [m.home, m.away])
+      .filter((s) => s.abbr === 'ECU').length;
+    expect(ecuCount).toBe(1);
+  });
 });
 
 describe('bestThirds', () => {

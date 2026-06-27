@@ -575,14 +575,33 @@ export function assignThirdSlots(
   return out;
 }
 
+/**
+ * Equipos que el feed ya colocó (resueltos) en alguna plaza de eliminatorias.
+ * El feed resuelve los terceros de forma incremental según cierran los grupos;
+ * durante esa ventana hay plazas de tercero ya con equipo y otras aún "3.º". Si
+ * no los excluimos del reparto, el emparejamiento podría proyectar en una plaza
+ * pendiente un tercero que el feed ya situó en otra → el mismo equipo saldría
+ * dos veces en el cuadro.
+ */
+function placedKnockoutTeams(list: Match[]): Set<string> {
+  const placed = new Set<string>();
+  for (const m of list) {
+    if (m.round === 'group-stage') continue;
+    if (!m.home.tbd) placed.add(teamKey(m.home));
+    if (!m.away.tbd) placed.add(teamKey(m.away));
+  }
+  return placed;
+}
+
 export function projectKnockouts(
   list: Match[],
   groups: Record<string, RankedTeam[]>,
 ): Match[] {
   if (!Object.keys(groups).length) return list;
 
-  // Los 8 mejores terceros, en orden de mérito.
-  const thirds = bestThirds(groups);
+  // Los mejores terceros, en orden de mérito, sin los que el feed ya colocó.
+  const placed = placedKnockoutTeams(list);
+  const thirds = bestThirds(groups).filter((t) => !placed.has(teamKey(t)));
 
   // Plazas "3.º" del cuadro, en orden de partido, con sus grupos elegibles.
   const slots: ThirdSlot[] = [];
